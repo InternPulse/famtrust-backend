@@ -46,7 +46,7 @@ Before setting up the project locally, ensure you have the following prerequisit
         pip install -r requirements.txt
 
 
-6. Create a .env file and set neccessary secret keys below:
+6. Create a .env file and set necessary secret keys below:
 
 
 7. Apply migrations to create the database schema:
@@ -54,12 +54,12 @@ Before setting up the project locally, ensure you have the following prerequisit
         python3 manage.py migrate
 
 
-8. Start the development server: 
+8. Start the development server:
  ```
  python3 manage.py runserver
  ```
 
-The API should now be running locally at [http://localhost:8000/](http://localhost:8000/).
+The API should now be running locally at [http://localhost:8000/api/v1](http://localhost:8000/api/v1).
 
 
 # Commit Standards
