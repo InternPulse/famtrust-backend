@@ -1,9 +1,25 @@
-from rest_framework.renderers import JSONRenderer
 import contextlib
+
+from rest_framework.renderers import JSONRenderer
 
 
 class CustomJSONRenderer(JSONRenderer):
+    """A custom renderer for JSON responses."""
+
     def render(self, data, accepted_media_type=None, renderer_context=None):
+        """
+        Render the data into a response based on the HTTP method and status
+        code.
+
+        Args:
+            data (dict): The data to be rendered.
+            accepted_media_type (str): The accepted media type.
+            renderer_context (dict): Additional context for rendering.
+
+        Returns:
+            The rendered response based on the HTTP method and
+            status code.
+        """
         view = renderer_context.get("view", None)
         http_method = view.request.method if view else "GET"
         if renderer_context and "response" in renderer_context:
@@ -43,7 +59,6 @@ class CustomJSONRenderer(JSONRenderer):
             message = f"{basename} {action} successfully"
 
         success = status_code < 300
-        data = data or None
         response_data = {
             "message": message,
             "status_code": status_code,
@@ -54,7 +69,7 @@ class CustomJSONRenderer(JSONRenderer):
             temp = data.get("data", {})
             if isinstance(temp, list):
                 response_data["metadata"] = data.get("metadata", None)
-            if status_code < 400 and data:
+            if status_code < 400:
                 response_data[data_name] = data.pop("data", data)
             else:
                 response_data["errors"] = data
