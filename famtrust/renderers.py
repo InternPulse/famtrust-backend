@@ -20,6 +20,7 @@ class CustomJSONRenderer(JSONRenderer):
             The rendered response based on the HTTP method and
             status code.
         """
+
         view = renderer_context.get("view", None)
         http_method = view.request.method if view else "GET"
         if renderer_context and "response" in renderer_context:
@@ -59,6 +60,7 @@ class CustomJSONRenderer(JSONRenderer):
             message = f"{basename} {action} successfully"
 
         success = status_code < 300
+
         response_data = {
             "message": message,
             "status_code": status_code,
