@@ -1,10 +1,13 @@
+import os
+
+from django.conf import settings
 from django.urls import reverse
+from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.routers import APIRootView, DefaultRouter
 from rest_framework.views import exception_handler
-from django.conf import settings
 
 
 class FamTrustAPI(APIRootView):
@@ -84,7 +87,38 @@ class Pagination(PageNumberPagination):
         page in the pagination response.
     """
 
-    max_page_size = 100
+    page_query_param = "page"
+    page_size_query_param = "page_size"
+    last_page_strings = ("last", "end")
+    try:
+        max_page_size = min(int(os.environ.get("MAX_PAGE_SIZE")), 100)
+    except ValueError:
+        max_page_size = 100
+
+    def get_page_size(self, request):
+        """Returns the page size."""
+        size = request.query_params.get(self.page_size_query_param, None)
+        if not size:
+            return self.page_size
+
+        try:
+            size = int(size)
+        except ValueError as e:
+            raise HTTPException(
+                detail="Page size must be an integer",
+                code="invalid_page_size",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            ) from e
+
+        if size <= 0 or size > self.max_page_size:
+            raise HTTPException(
+                detail="Page size must be a positive integer and not exceed "
+                f"{self.max_page_size}",
+                code="invalid_page_size",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return super().get_page_size(request)
 
     def get_paginated_response(self, data) -> Response:
         """
@@ -111,6 +145,7 @@ class Pagination(PageNumberPagination):
         )
 
     def get_paginated_response_schema(self, schema):
+        """Schema for paginated response."""
         return {
             "type": "object",
             "properties": {
