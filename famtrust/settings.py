@@ -38,6 +38,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "famtrust.middleware.ValidateUserMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -156,7 +157,7 @@ DESCRIPTION = """This microservice hosts the API endpoints related to Accounts
               """
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "FamTrust - Accounts and Transaction Microservice",
+    "TITLE": "FamTrust - Accounts and Transactions Microservice",
     "DESCRIPTION": DESCRIPTION,
     "VERSION": API_VERSION,
     "SERVE_INCLUDE_SCHEMA": False,
@@ -165,9 +166,11 @@ SPECTACULAR_SETTINGS = {
     "REDOC_DIST": "SIDECAR",
     "SERVERS": [
         {
-            "url": "http://localhost:8000"
-            if DEBUG
-            else os.environ.get("PRODUCTION_URL")
+            "url": (
+                "http://localhost:8000"
+                if DEBUG
+                else os.environ.get("PRODUCTION_URL")
+            )
         }
     ],
     "SWAGGER_UI_SETTINGS": {
@@ -176,3 +179,5 @@ SPECTACULAR_SETTINGS = {
         "displayOperationId": True,
     },
 }
+
+EXTERNAL_AUTH_URL = os.environ.get("EXTERNAL_AUTH_URL")
