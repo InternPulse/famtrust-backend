@@ -22,6 +22,7 @@ api_prefix = f"api/{settings.API_VERSION}"
     summary="Get API status",
     tags=["API Status"],
     auth=[],
+    operation_id="get_api_status",
     responses=(
         OpenApiResponse(
             description="API is running",
@@ -30,10 +31,13 @@ api_prefix = f"api/{settings.API_VERSION}"
                 OpenApiExample(
                     name="API status",
                     value={
-                        "message": "Data retrieved successfully",
+                        "message": "API status retrieved successfully",
                         "status_code": 200,
                         "success": True,
-                        "data": {"status": "OK"},
+                        "api": {
+                            "status": "OK",
+                            "version": settings.API_VERSION,
+                        },
                     },
                 )
             ],
@@ -43,7 +47,13 @@ api_prefix = f"api/{settings.API_VERSION}"
 @api_view(["GET"])
 def api_status(_):
     """Returns 'OK' if the API is up and running."""
-    return Response(data={"status": "OK"}, status=status.HTTP_200_OK)
+    return Response(
+        data={
+            "status": "OK",
+            "version": settings.API_VERSION,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 urlpatterns = [
