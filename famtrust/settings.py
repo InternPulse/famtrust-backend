@@ -22,8 +22,9 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    "accounts_transactions",
+    "accounts",
     "family_memberships",
+    "transactions",
     "drf_spectacular",
     "drf_spectacular_sidecar",
     "corsheaders",
@@ -152,12 +153,14 @@ REST_FRAMEWORK = {
 
 API_VERSION = os.environ.get("API_VERSION", "v1")
 
-DESCRIPTION = """This microservice hosts the API endpoints related to Accounts
-              and transactions for the FamTrust platform.
-              """
+DESCRIPTION = """This microservice hosts the API endpoints related to
+account-related operations, family-related operations, and transactions.
+"""
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "FamTrust - Accounts and Transactions Microservice",
+    "TITLE": (
+        "FamTrust - Family Management, Accounts &Transactions Microservice"
+    ),
     "DESCRIPTION": DESCRIPTION,
     "VERSION": API_VERSION,
     "SERVE_INCLUDE_SCHEMA": False,

@@ -24,10 +24,11 @@ class FamTrustAPI(APIRootView):
     def get(self, request, *args, **kwargs):
         """Returns all existing endpoints."""
         response = super().get(request, *args, **kwargs)
-        base_names = [
+        base_names = (
+            "transaction-list",
             "family-group-list",
-            "membership-list",
-        ]
+            "family-membership-list",
+        )
 
         for basename in base_names:
             relative_url = reverse(basename)
