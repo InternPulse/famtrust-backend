@@ -53,6 +53,13 @@ class FamTrustAPI(APIRootView):
 
         response.data = updated_data
 
+        updated_data = {}
+        for key, value in response.data.items():
+            new_key = key.replace("-", "_")
+            updated_data[new_key] = value
+
+        response.data = updated_data
+
         return response
 
 
