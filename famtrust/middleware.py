@@ -5,6 +5,7 @@ dictionary with the name `ft_user` (FamTrust user)
 """
 
 from django.http import JsonResponse
+from django.urls import reverse
 from django.utils.deprecation import MiddlewareMixin
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
@@ -19,11 +20,19 @@ class ValidateUserMiddleware(MiddlewareMixin):
     def process_request(request):
         """Validates that the access token of a user is valid."""
 
-        # Allow the API documentation to be viewable without authentication
+        # Allow the API status documentation to be viewable without
+        # authentication
+        allowed_routes = (
+            reverse("api-status"),
+            reverse("swagger"),
+            reverse("redoc"),
+            reverse("schema"),
+            reverse("api-root"),
+        )
         if any(
             path
-            for path in ["swagger", "docs", "schema"]
-            if path in request.path
+            for path in allowed_routes
+            if request.path.rstrip("/") == path.rstrip("/")
         ):
             return
 

@@ -1,3 +1,4 @@
+import contextlib
 import os
 
 import requests
@@ -43,7 +44,14 @@ class FamTrustAPI(APIRootView):
         )
 
         full_url = request.build_absolute_uri(relative_url)
-        response.data["status"] = full_url
+        response.data["api_status"] = full_url
+
+        updated_data = {}
+        for key, value in response.data.items():
+            new_key = key.replace("-", "_")
+            updated_data[new_key] = value
+
+        response.data = updated_data
 
         updated_data = {}
         for key, value in response.data.items():
@@ -204,18 +212,17 @@ class Pagination(PageNumberPagination):
 def is_valid_token(*, token):
     """Verifies a user token."""
     url = f"{settings.EXTERNAL_AUTH_URL}/validate"
-    headers = {
-        "Authorization": f"Bearer {token}",
-    }
+    headers = {"Authorization": f"Bearer {token}"}
 
-    response = requests.get(url=url, headers=headers)
+    with contextlib.suppress(requests.exceptions.RequestException):
+        response = requests.get(url=url, headers=headers)
 
-    return response.status_code == status.HTTP_200_OK
+        return response.status_code == status.HTTP_200_OK
 
 
 def fetch_user_data(*, token, user_id):
     """Fetches user data for further usages."""
-    url = f"{settings.EXTERNAL_AUTH_URL}/users/{user_id}"
+    url = f"{settings.EXTERNAL_AUTH_URL}/profiles/{user_id}"
     response = requests.get(url=url, headers={"Authorization": token})
     response.raise_for_status()
     return response.json()
