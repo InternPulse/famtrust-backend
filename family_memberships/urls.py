@@ -9,7 +9,9 @@ router.register(
     basename="family-group",
 )
 router.register(
-    prefix="memberships", viewset=MembershipsViewSet, basename="membership"
+    prefix="family-memberships",
+    viewset=MembershipsViewSet,
+    basename="family-membership",
 )
 
 urlpatterns = router.urls
