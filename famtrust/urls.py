@@ -1,5 +1,3 @@
-from typing import Any
-
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
@@ -17,18 +15,17 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
-from famtrust.utils import CustomDefaultRouter
-
-router = CustomDefaultRouter()
 api_prefix = f"api/{settings.API_VERSION}"
 
 
 @extend_schema(
     summary="Get API status",
+    tags=["API Status"],
+    auth=[],
     responses=(
         OpenApiResponse(
             description="API is running",
-            response=dict[str, Any],
+            response=dict[str, str],
             examples=[
                 OpenApiExample(
                     name="API status",
@@ -65,9 +62,6 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
-    path(f"{api_prefix}/auth/", include("rest_framework.urls")),
     path(f"{api_prefix}/", include("accounts_transactions.urls")),
     path(f"{api_prefix}/", include("family_memberships.urls")),
 ]
-
-urlpatterns += router.urls

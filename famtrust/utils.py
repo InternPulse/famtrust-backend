@@ -1,12 +1,16 @@
 import os
 
+import requests
 from django.conf import settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.exceptions import APIException
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from rest_framework.routers import APIRootView, DefaultRouter
+from rest_framework.routers import (
+    APIRootView,
+    DefaultRouter,
+)
 from rest_framework.views import exception_handler
 
 
@@ -17,18 +21,19 @@ class FamTrustAPI(APIRootView):
     """
 
     def get(self, request, *args, **kwargs):
+        """Returns all existing endpoints."""
         response = super().get(request, *args, **kwargs)
         base_names = [
-            "account-list",
-            "transaction-list",
             "family-group-list",
             "membership-list",
         ]
 
         for basename in base_names:
-            relative_url = f"/api/{settings.API_VERSION}{reverse(basename)}"
+            relative_url = reverse(basename)
             absolute_url = request.build_absolute_uri(relative_url)
             key = absolute_url.split("/")[-1]
+            if len(key) == 0:
+                key = basename
             response.data[key] = absolute_url
 
         relative_url = reverse(
@@ -39,6 +44,13 @@ class FamTrustAPI(APIRootView):
 
         full_url = request.build_absolute_uri(relative_url)
         response.data["status"] = full_url
+
+        updated_data = {}
+        for key, value in response.data.items():
+            new_key = key.replace("-", "_")
+            updated_data[new_key] = value
+
+        response.data = updated_data
 
         return response
 
@@ -60,13 +72,16 @@ class HTTPException(APIException):
 
 
 def custom_exception_handler(exc, context):
+    view = context.get("view")
+
     response = exception_handler(exc, context)
-
+    basename = view.basename.replace("-", " ").title()
     if response is not None:
-        response.data["status_code"] = response.status_code
-
         if response.status_code == 404:
-            response.data["message"] = "The requested resource was not found"
+            response.data["detail"] = f"{basename} not found."
+
+        if "unique" in str(exc.__dict__):
+            response.status_code = status.HTTP_409_CONFLICT
 
     return response
 
@@ -184,3 +199,33 @@ class Pagination(PageNumberPagination):
                 "data": schema,
             },
         }
+
+
+def is_valid_token(*, token):
+    """Verifies a user token."""
+    url = f"{settings.EXTERNAL_AUTH_URL}/validate"
+    headers = {
+        "Authorization": f"Bearer {token}",
+    }
+
+    response = requests.get(url=url, headers=headers)
+
+    return response.status_code == status.HTTP_200_OK
+
+
+def fetch_user_data(*, token, user_id):
+    """Fetches user data for further usages."""
+    url = f"{settings.EXTERNAL_AUTH_URL}/users/{user_id}"
+    response = requests.get(url=url, headers={"Authorization": token})
+    response.raise_for_status()
+    return response.json()
+
+
+def get_family_group_ids(*, user_id: str):
+    """
+    Retrieves the family group IDs for the given user, if the user
+    belongs to any family group.
+    """
+    # return Membership.objects.filter(
+    #      user_id=user_id
+    # ).value_list("family_group_id", flat=True)

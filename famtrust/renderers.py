@@ -1,5 +1,3 @@
-import contextlib
-
 from rest_framework.renderers import JSONRenderer
 
 
@@ -21,7 +19,7 @@ class CustomJSONRenderer(JSONRenderer):
             status code.
         """
 
-        view = renderer_context.get("view", None)
+        view = renderer_context.get("view")
         http_method = view.request.method if view else "GET"
         if renderer_context and "response" in renderer_context:
             status_code = renderer_context["response"].status_code
@@ -35,29 +33,37 @@ class CustomJSONRenderer(JSONRenderer):
         elif http_method in ("PUT", "PATCH"):
             action = "updated"
         elif http_method == "DELETE" and status_code == 204:
-            return super().render(None, accepted_media_type, renderer_context)
+            return super().render(
+                data=None,
+                accepted_media_type=accepted_media_type,
+                renderer_context=renderer_context,
+            )
         else:
             action = "processed"
 
-        basename = "Data"
-        if view:
-            with contextlib.suppress(AttributeError):
-                detail = view.detail
-                if not detail and action != "created":
-                    basename = f"{view.basename}s".title()
-                else:
-                    basename = view.basename.title()
-        data_name = basename.lower()
+        basename = getattr(view, "basename", None)
+        if not basename and hasattr(view, "get_queryset"):
+            basename = view.get_queryset().model.__name__.lower()
+        if not basename:
+            basename = "Data"
 
-        message = "An error occurred"
+        detail = getattr(view, "detail", None)
+        if not detail and action != "created":
+            if not basename.endswith("s") and basename != "Data":
+                basename = f"{basename}s"
+
+        basename = basename.replace("-", " ").title()
+        data_name = basename.lower().replace(" ", "_")
+
+        message = "An error occurred."
         if status_code >= 500:
-            message = "An error occurred on the server"
+            message = "An error occurred on the server."
         elif status_code >= 400:
-            message = "An error occurred in the request"
+            message = "An error occurred in the request."
         elif status_code >= 300:
-            message = "Request redirected to another resource"
+            message = "Request redirected to another resource."
         elif status_code >= 200:
-            message = f"{basename} {action} successfully"
+            message = f"{basename} {action} successfully."
 
         success = status_code < 300
 
