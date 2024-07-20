@@ -5,7 +5,7 @@ on accounts related operations.
 
 from rest_framework import serializers
 
-from accounts_transactions.models import (
+from accounts.models import (
     FamilyAccount,
     FundRequest,
     SubAccount,

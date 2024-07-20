@@ -116,7 +116,7 @@ class Migration(migrations.Migration):
                         db_comment="The family account this sub account belongs and withdraws from",
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="sub_accounts",
-                        to="accounts_transactions.familyaccount",
+                        to="accounts.familyaccount",
                     ),
                 ),
             ],
@@ -180,7 +180,7 @@ class Migration(migrations.Migration):
                         null=True,
                         on_delete=django.db.models.deletion.CASCADE,
                         related_name="fund_requests",
-                        to="accounts_transactions.familyaccount",
+                        to="accounts.familyaccount",
                     ),
                 ),
                 (
@@ -188,7 +188,7 @@ class Migration(migrations.Migration):
                     models.ForeignKey(
                         db_comment="The account to be funded if the request is accepted",
                         on_delete=django.db.models.deletion.CASCADE,
-                        to="accounts_transactions.subaccount",
+                        to="accounts.subaccount",
                     ),
                 ),
             ],
