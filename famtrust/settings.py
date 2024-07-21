@@ -159,7 +159,7 @@ account-related operations, family-related operations, and transactions.
 
 SPECTACULAR_SETTINGS = {
     "TITLE": (
-        "FamTrust - Family Management, Accounts &Transactions Microservice"
+        "FamTrust - Family Management, Accounts & Transactions Microservice"
     ),
     "DESCRIPTION": DESCRIPTION,
     "VERSION": API_VERSION,
