@@ -1,5 +1,10 @@
+"""
+This module defines useful utility functions.
+"""
+
 import contextlib
 import os
+from typing import Any
 
 import requests
 from django.conf import settings
@@ -24,10 +29,11 @@ class FamTrustAPI(APIRootView):
     def get(self, request, *args, **kwargs):
         """Returns all existing endpoints."""
         response = super().get(request, *args, **kwargs)
-        base_names = [
+        base_names = (
+            "transaction-list",
             "family-group-list",
-            "membership-list",
-        ]
+            "family-membership-list",
+        )
 
         for basename in base_names:
             relative_url = reverse(basename)
@@ -209,15 +215,17 @@ class Pagination(PageNumberPagination):
         }
 
 
-def is_valid_token(*, token):
-    """Verifies a user token."""
+def is_valid_token(*, token) -> tuple[bool, Any] | tuple[bool, None]:
+    """Verifies a user token and returns some user data if valid."""
     url = f"{settings.EXTERNAL_AUTH_URL}/validate"
     headers = {"Authorization": f"Bearer {token}"}
 
     with contextlib.suppress(requests.exceptions.RequestException):
         response = requests.get(url=url, headers=headers)
+        if response.status_code == status.HTTP_200_OK:
+            return True, response.json()
 
-        return response.status_code == status.HTTP_200_OK
+        return False, None
 
 
 def fetch_user_data(*, token, user_id):

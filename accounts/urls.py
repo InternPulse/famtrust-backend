@@ -5,16 +5,12 @@ from .views import (
     FamilyAccountViewSet,
     FundRequestViewSet,
     SubAccountViewSet,
-    TransactionViewSet,
 )
 
 router = CustomDefaultRouter()
 router.register(
     prefix="sub-accounts", viewset=SubAccountViewSet, basename="sub-account"
 )
-router.register(
-    prefix="transactions", viewset=TransactionViewSet, basename="transaction"
-),
 router.register(
     prefix="family-accounts",
     viewset=FamilyAccountViewSet,

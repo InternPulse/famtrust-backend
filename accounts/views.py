@@ -9,8 +9,8 @@ from rest_framework import (
     viewsets,
 )
 
-from accounts_transactions import serializers
-from accounts_transactions.models import (
+from accounts import serializers
+from accounts.models import (
     FamilyAccount,
     FundRequest,
     SubAccount,
@@ -383,8 +383,3 @@ class FundRequestViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """Deletes an existing fund request."""
         return super().destroy(request, *args, **kwargs)
-
-
-@extend_schema(tags=["Transactions"], auth=[])
-class TransactionViewSet(viewsets.ModelViewSet):
-    """A collection of endpoints for Transaction operations."""

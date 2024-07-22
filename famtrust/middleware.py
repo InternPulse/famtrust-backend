@@ -47,7 +47,8 @@ class ValidateUserMiddleware(MiddlewareMixin):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        if not utils.is_valid_token(token=token):
+        valid_token, data = utils.is_valid_token(token=token)
+        if not valid_token:
             return JsonResponse(
                 data={
                     "error": _("Invalid or expired token"),
@@ -55,6 +56,8 @@ class ValidateUserMiddleware(MiddlewareMixin):
                 },
                 status=status.HTTP_401_UNAUTHORIZED,
             )
+
+        request.ft_user = data
 
         if "X-User-Id" not in request.headers:
             return JsonResponse(
@@ -67,4 +70,5 @@ class ValidateUserMiddleware(MiddlewareMixin):
         user = utils.fetch_user_data(
             token=token, user_id=request.headers.get("X-User-Id")
         )
-        request.ft_user = user
+        # update the user in the request object with the fetched user data
+        request.ft_user.update(user)
