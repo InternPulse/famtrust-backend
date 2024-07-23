@@ -1,79 +1,54 @@
 from django.test import TestCase
-from ..models import FamilyGroup, Membership
-from rest_framework.exceptions import ValidationError
+from django.contrib.auth.models import User
+from django.utils import timezone
+from family_memberships.models import FamilyGroup, Membership
 import uuid
 
-# Create your tests here.
-
-
-class FamilyGroupModelTest(TestCase):
-
-    def test_create_family_group(self):
-        """Tests creating a FamilyGroup object with valid data."""
-        name = "Test Family Group"
-        description = "This is a test description."
-        family_group = FamilyGroup.objects.create(name=name, description=description)
-        self.assertEqual(family_group.name, name)
-        self.assertEqual(family_group.description, description)
-        self.assertIsInstance(family_group.id, uuid.UUID)
-        self.assertIsNotNone(family_group.created_at)
-
-
-    def test_create_family_group_without_description(self):
-        """Tests creating a FamilyGroup object without a description."""
-        name = "Test Family Group"
-        family_group = FamilyGroup.objects.create(name=name)
-        self.assertEqual(family_group.name, name)
-        self.assertEqual(family_group.description, "")
-
-    def test_invalid_name(self):
-        """Tests creating a FamilyGroup object with an empty name."""
-        with self.assertRaises(ValidationError):
-            FamilyGroup.objects.create(name="")
-
-
-
-
-
-class MembershipModelTest(TestCase):
+class FamilyGroupModelTests(TestCase):
 
     def setUp(self):
-        self.family_group = FamilyGroup.objects.create(name="Test Family Group")
-
-    def test_create_membership(self):
-        """Tests creating a Membership object with valid data."""
-        member_name = "John Doe"
-        email = "johndoe@example.com"
-        membership = Membership.objects.create(
-            family_group=self.family_group, member_name=member_name, email=email
+        self.user = User.objects.create_user(username='testuser', password='password')
+        self.family_group = FamilyGroup.objects.create(
+            id=uuid.uuid4(),
+            name='Test Family Group',
+            description='This is a test family group.',
+            owner_id=uuid.uuid4()
         )
-        self.assertEqual(membership.family_group, self.family_group)
-        self.assertEqual(membership.member_name, member_name)
-        self.assertEqual(membership.email, email)
-        self.assertIsInstance(membership.id, uuid.UUID)
-        self.assertIsNotNone(membership.joined_at)
-        self.assertEqual(membership.role, "member")  # Default role
 
-    def test_create_membership_with_admin_role(self):
-        """Tests creating a Membership object with an admin role."""
-        member_name = "Jane Doe"
-        email = "janedoe@example.com"
-        membership = Membership.objects.create(
-            family_group=self.family_group,
-            member_name=member_name,
-            email=email,
-            role="admin",
+    def test_family_group_creation(self):
+        self.assertEqual(self.family_group.name, 'Test Family Group')
+        self.assertEqual(self.family_group.description, 'This is a test family group.')
+        self.assertIsInstance(self.family_group.created_at, timezone.datetime)
+        self.assertIsInstance(self.family_group.updated_at, timezone.datetime)
+        self.assertIsInstance(self.family_group.id, uuid.UUID)
+        self.assertIsInstance(self.family_group.owner_id, uuid.UUID)
+    
+    def test_str_method(self):
+        self.assertEqual(str(self.family_group), self.family_group.name)
+
+
+class MembershipModelTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser', password='password')
+        self.family_group = FamilyGroup.objects.create(
+            id=uuid.uuid4(),
+            name='Test Family Group',
+            description='This is a test family group.',
+            owner_id=uuid.uuid4()
         )
-        self.assertEqual(membership.role, "admin")
+        self.membership = Membership.objects.create(
+            membership_id=uuid.uuid4(),
+            user=self.user,
+            family_group=self.family_group
+        )
 
-    def test_invalid_email(self):
-        """Tests creating a Membership object with an invalid email."""
-        member_name = "John Doe"
-        email = "invalid_email"
-        with self.assertRaises(ValidationError):
-            Membership.objects.create(
-                family_group=self.family_group, member_name=member_name, email=email
-            )
-
-
-
+    def test_membership_creation(self):
+        self.assertEqual(self.membership.user, self.user)
+        self.assertEqual(self.membership.family_group, self.family_group)
+        self.assertIsInstance(self.membership.joined_at, timezone.datetime)
+        self.assertIsInstance(self.membership.membership_id, uuid.UUID)
+    
+    def test_str_method(self):
+        expected_str = f"Membership {self.membership.membership_id} for {self.user} in {self.family_group}"
+        self.assertEqual(str(self.membership), expected_str)
