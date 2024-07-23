@@ -1,199 +1,160 @@
-from rest_framework import generics, status
-from rest_framework.response import Response
+from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import (
+    OpenApiRequest,
+    OpenApiResponse,
+    extend_schema,
+)
+from rest_framework import (
+    status,
+    viewsets,
+)
+
 from .models import FamilyGroup, Membership
 from .serializers import FamilyGroupSerializer, MembershipSerializer
-from drf_yasg.utils import swagger_auto_schema
+from famtrust import permissions, utils
 
-# View for listing all family groups
-class FamilyGroupListAPIView(generics.ListAPIView):
-    queryset = FamilyGroup.objects.all()
+
+@extend_schema(tags=["Family Groups"], auth=[])
+class FamilyGroupViewSet(viewsets.ModelViewSet):
+    """A collection of endpoints for FamilyGroup operations."""
+
+    http_method_names = ("get", "post", "put", "delete")
     serializer_class = FamilyGroupSerializer
+    queryset = FamilyGroup.objects.all().order_by('created_at')  # Order by created_at
+    permission_classes = (
+        permissions.IsAuthenticatedWithUserService,
+    )
 
-    @swagger_auto_schema(operation_description="Retrieve all family groups", responses={200: FamilyGroupSerializer(many=True)})
-    def get(self, request, *args, **kwargs):
-        family_groups = self.get_queryset()
-        if not family_groups.exists():
-            response_data = {
-                'status': 404,
-                'success': False,
-                'message': 'No family groups found'
-            }
-            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
+    @extend_schema(
+        summary="Retrieve all family groups",
+        responses=OpenApiResponse(
+            response=FamilyGroupSerializer,
+            description="Family Groups retrieved successfully",
+        ),
+    )
+    def list(self, request, *args, **kwargs):
+        """List all family groups."""
+        return super().list(request, *args, **kwargs)
 
-        serializer = self.get_serializer(family_groups, many=True)
-        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+    @extend_schema(
+        summary="Retrieve a single family group",
+        responses=OpenApiResponse(
+            response=FamilyGroupSerializer,
+            description="Family Group retrieved successfully",
+        ),
+    )
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve a single family group."""
+        return super().retrieve(request, *args, **kwargs)
 
-# View for creating a new family group
-class FamilyGroupCreateAPIView(generics.CreateAPIView):
-    queryset = FamilyGroup.objects.all()
-    serializer_class = FamilyGroupSerializer
+    @extend_schema(
+        summary="Create a new family group",
+        responses=OpenApiResponse(
+            response=FamilyGroupSerializer,
+            description="Family Group created successfully",
+        ),
+        request=OpenApiRequest(
+            request=FamilyGroupSerializer,
+        ),
+    )
+    def create(self, request, *args, **kwargs):
+        """Create a new family group."""
+        return super().create(request, *args, **kwargs)
 
-    @swagger_auto_schema(operation_description="Create a new family group", request_body=FamilyGroupSerializer, responses={201: FamilyGroupSerializer})
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            response_data = {
-                'status': 201,
-                'success': True,
-                'message': 'Family group successfully created',
-                'data': serializer.data
-            }
-            return Response(response_data, status=status.HTTP_201_CREATED)
-        response_data = {
-            'status': 400,
-            'success': False,
-            'message': 'Validation Error',
-            'errors': serializer.errors
-        }
-        return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+    @extend_schema(
+        summary="Update an existing family group",
+        responses=OpenApiResponse(
+            description="Family Group updated successfully",
+            response=FamilyGroupSerializer,
+        ),
+        request=OpenApiRequest(
+            request=FamilyGroupSerializer,
+        ),
+    )
+    def update(self, request, *args, **kwargs):
+        """Update an existing family group."""
+        return super().update(request, *args, **kwargs)
 
-# View for retrieving, updating, and deleting a specific family group by its ID
-class FamilyGroupDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = FamilyGroup.objects.all()
-    serializer_class = FamilyGroupSerializer
+    @extend_schema(
+        summary="Delete an existing family group",
+        responses=OpenApiResponse(
+            response=None,
+            description="Family Group deleted successfully",
+        ),
+    )
+    def destroy(self, request, *args, **kwargs):
+        """Deletes an existing family group."""
+        return super().destroy(request, *args, **kwargs)
 
-    @swagger_auto_schema(operation_description="Retrieve a family group", responses={200: FamilyGroupSerializer})
-    def get(self, request, *args, **kwargs):
-        try:
-            family_group = self.get_object()
-        except FamilyGroup.DoesNotExist:
-            response_data = {
-                'status': 404,
-                'success': False,
-                'message': 'Family group not found'
-            }
-            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = self.get_serializer(family_group)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+@extend_schema(tags=["Memberships"], auth=[])
+class MembershipViewSet(viewsets.ModelViewSet):
+    """A collection of endpoints for Membership operations."""
 
-    @swagger_auto_schema(operation_description="Update a family group", request_body=FamilyGroupSerializer, responses={200: FamilyGroupSerializer})
-    def put(self, request, *args, **kwargs):
-        try:
-            family_group = self.get_object()
-        except FamilyGroup.DoesNotExist:
-            response_data = {
-                'status': 404,
-                'success': False,
-                'message': 'Family group not found'
-            }
-            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(family_group, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    @swagger_auto_schema(operation_description="Delete a family group", responses={204: 'No Content'})
-    def delete(self, request, *args, **kwargs):
-        try:
-            family_group = self.get_object()
-        except FamilyGroup.DoesNotExist:
-            response_data = {
-                'status': 404,
-                'success': False,
-                'message': 'Family group not found'
-            }
-            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
-
-        family_group.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-# View for listing all memberships
-class MembershipListAPIView(generics.ListAPIView):
-    queryset = Membership.objects.all()
+    http_method_names = ("get", "post", "put", "delete")
     serializer_class = MembershipSerializer
+    queryset = Membership.objects.all().order_by('joined_at')  # Order by joined_at
+    permission_classes = (
+        permissions.IsAuthenticatedWithUserService,
+    )
 
-    @swagger_auto_schema(operation_description="Retrieve all memberships", responses={200: MembershipSerializer(many=True)})
-    def get(self, request, *args, **kwargs):
-        memberships = self.get_queryset()
-        if not memberships.exists():
-            response_data = {
-                'status': 404,
-                'success': False,
-                'message': 'No memberships found'
-            }
-            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
+    @extend_schema(
+        summary="Retrieve all memberships",
+        responses=OpenApiResponse(
+            response=MembershipSerializer,
+            description="Memberships retrieved successfully",
+        ),
+    )
+    def list(self, request, *args, **kwargs):
+        """List all memberships."""
+        return super().list(request, *args, **kwargs)
 
-        serializer = self.get_serializer(memberships, many=True)
-        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+    @extend_schema(
+        summary="Retrieve a single membership",
+        responses=OpenApiResponse(
+            response=MembershipSerializer,
+            description="Membership retrieved successfully",
+        ),
+    )
+    def retrieve(self, request, *args, **kwargs):
+        """Retrieve a single membership."""
+        return super().retrieve(request, *args, **kwargs)
 
-# View for creating a new membership
-class MembershipCreateAPIView(generics.CreateAPIView):
-    queryset = Membership.objects.all()
-    serializer_class = MembershipSerializer
+    @extend_schema(
+        summary="Create a new membership",
+        responses=OpenApiResponse(
+            response=MembershipSerializer,
+            description="Membership created successfully",
+        ),
+        request=OpenApiRequest(
+            request=MembershipSerializer,
+        ),
+    )
+    def create(self, request, *args, **kwargs):
+        """Create a new membership."""
+        return super().create(request, *args, **kwargs)
 
-    @swagger_auto_schema(operation_description="Create a new membership", request_body=MembershipSerializer, responses={201: MembershipSerializer})
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            response_data = {
-                'status': 201,
-                'success': True,
-                'message': 'Membership successfully created',
-                'data': serializer.data
-            }
-            return Response(response_data, status=status.HTTP_201_CREATED)
-        response_data = {
-            'status': 400,
-            'success': False,
-            'message': 'Validation Error',
-            'errors': serializer.errors
-        }
-        return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+    @extend_schema(
+        summary="Update an existing membership",
+        responses=OpenApiResponse(
+            description="Membership updated successfully",
+            response=MembershipSerializer,
+        ),
+        request=OpenApiRequest(
+            request=MembershipSerializer,
+        ),
+    )
+    def update(self, request, *args, **kwargs):
+        """Update an existing membership."""
+        return super().update(request, *args, **kwargs)
 
-# View for retrieving, updating, and deleting a specific membership by its ID
-class MembershipDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Membership.objects.all()
-    serializer_class = MembershipSerializer
-
-    @swagger_auto_schema(operation_description="Retrieve a membership", responses={200: MembershipSerializer})
-    def get(self, request, *args, **kwargs):
-        try:
-            membership = self.get_object()
-        except Membership.DoesNotExist:
-            response_data = {
-                'status': 404,
-                'success': False,
-                'message': 'Membership not found'
-            }
-            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(membership)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @swagger_auto_schema(operation_description="Update a membership", request_body=MembershipSerializer, responses={200: MembershipSerializer})
-    def put(self, request, *args, **kwargs):
-        try:
-            membership = self.get_object()
-        except Membership.DoesNotExist:
-            response_data = {
-                'status': 404,
-                'success': False,
-                'message': 'Membership not found'
-            }
-            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(membership, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    @swagger_auto_schema(operation_description="Delete a membership", responses={204: 'No Content'})
-    def delete(self, request, *args, **kwargs):
-        try:
-            membership = self.get_object()
-        except Membership.DoesNotExist:
-            response_data = {
-                'status': 404,
-                'success': False,
-                'message': 'Membership not found'
-            }
-            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
-
-        membership.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    @extend_schema(
+        summary="Delete an existing membership",
+        responses=OpenApiResponse(
+            response=None,
+            description="Membership deleted successfully",
+        ),
+    )
+    def destroy(self, request, *args, **kwargs):
+        """Deletes an existing membership."""
+        return super().destroy(request, *args, **kwargs)

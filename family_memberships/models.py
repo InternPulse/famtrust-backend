@@ -1,68 +1,23 @@
 from django.db import models
 import uuid
+from django.conf import settings
 
-# Model for FamilyGroup
 class FamilyGroup(models.Model):
-    # Primary key field using UUID
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    # Name of the family group
     name = models.CharField(max_length=255)
-    # Optional description for the family group
-    description = models.TextField(blank=True, null=True)
-    # Timestamp for when the family group was created
+    description = models.CharField(max_length=255, blank=False, null=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    # Timestamp for when the family group was last updated
     updated_at = models.DateTimeField(auto_now=True)
+    owner_id = models.UUIDField(default=uuid.uuid4)  # Ensure this is properly set
 
-    # String representation of the model
     def __str__(self):
         return self.name
 
-# Model for Membership
 class Membership(models.Model):
-    # Primary key field using UUID
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    # Foreign key to the FamilyGroup model
-    family_group = models.ForeignKey(FamilyGroup, related_name='memberships', on_delete=models.CASCADE)
-    # Name of the member
-    member_name = models.CharField(max_length=255)
-    # Email of the member
-    email = models.EmailField()
-    # Role of the member within the family group
-    role = models.CharField(max_length=255, choices=[('admin', 'Admin'), ('member', 'Member')], default='member')
-    # Timestamp for when the membership was created
+    membership_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # UUID field for primary key
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, null=True)  # Temporarily allow null
+    family_group = models.ForeignKey('FamilyGroup', on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
-
-    # String representation of the model
+    
     def __str__(self):
-        return self.member_name
-
-
-
-
-# from django.db import models
-# import uuid
-
-
-
-
-# class FamilyGroup(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     name = models.CharField(max_length=255)
-#     description = models.CharField(max_length=255, blank=True, null=True)
-#     created_at = models.DateTimeField(auto_now_add=True)
-#     updated_at = models.DateTimeField(auto_now=True)
-
-#     def __str__(self):
-#         return self.name
-
-# class Membership(models.Model):
-#     membership_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     family_group = models.ForeignKey(FamilyGroup, related_name='memberships', on_delete=models.CASCADE)
-#     joined_at = models.DateTimeField(auto_now_add=True)
-
-#     def __str__(self):
-#         return f"{self.family_group.name} - {self.membership_id}"
-
-
-
+        return f"Membership {self.membership_id} for {self.user} in {self.family_group}"
