@@ -22,8 +22,9 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    "accounts_transactions",
+    "accounts",
     "family_memberships",
+    "transactions",
     "drf_spectacular",
     "drf_spectacular_sidecar",
     "corsheaders",
@@ -72,12 +73,29 @@ WSGI_APPLICATION = "famtrust.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if os.environ.get("ENV") == "DEV":
+    DB_NAME = os.environ.get("DB_NAME") + "_dev"
+else:
+    DB_NAME = os.environ.get("DB_NAME")
+
+if os.environ.get("DB_ENGINE") == "sqlite3":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / DB_NAME,
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": f"django.db.backends.{os.environ.get('DB_ENGINE')}",
+            "NAME": DB_NAME,
+            "USER": os.environ.get("DB_USER"),
+            "PASSWORD": os.environ.get("DB_PASSWORD"),
+            "HOST": os.environ.get("DB_HOST"),
+            "PORT": os.environ.get("DB_PORT"),
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -153,12 +171,14 @@ REST_FRAMEWORK = {
 
 API_VERSION = os.environ.get("API_VERSION", "v1")
 
-DESCRIPTION = """This microservice hosts the API endpoints related to Accounts
-              and transactions for the FamTrust platform.
-              """
+DESCRIPTION = """This microservice hosts the API endpoints related to
+account-related operations, family-related operations, and transactions.
+"""
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "FamTrust - Accounts and Transactions Microservice",
+    "TITLE": (
+        "FamTrust - Family Management, Accounts & Transactions Microservice"
+    ),
     "DESCRIPTION": DESCRIPTION,
     "VERSION": API_VERSION,
     "SERVE_INCLUDE_SCHEMA": False,

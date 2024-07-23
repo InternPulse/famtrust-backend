@@ -1,3 +1,4 @@
+from django.urls import reverse
 from rest_framework.renderers import JSONRenderer
 
 
@@ -66,6 +67,13 @@ class CustomJSONRenderer(JSONRenderer):
             message = f"{basename} {action} successfully."
 
         success = status_code < 300
+
+        if view.request.path == reverse("api-status"):
+            message = "API status retrieved successfully"
+            data_name = "api"
+        elif view.request.path == reverse("api-root"):
+            message = "API Endpoints retrieved successfully"
+            data_name = "endpoints"
 
         response_data = {
             "message": message,

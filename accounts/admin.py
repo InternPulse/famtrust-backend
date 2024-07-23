@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from accounts_transactions.models import (
+from accounts.models import (
     FamilyAccount,
     FundRequest,
     SubAccount,
