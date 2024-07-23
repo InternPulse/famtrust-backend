@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.utils import timezone
-from family_memberships.models import FamilyGroup, Membership
+from family_memberships.models import FamilyGroup, FamilyMembership
 import uuid
 
 class FamilyGroupModelTests(TestCase):
@@ -27,7 +27,7 @@ class FamilyGroupModelTests(TestCase):
         self.assertEqual(str(self.family_group), self.family_group.name)
 
 
-class MembershipModelTests(TestCase):
+class FamilyMembershipModelTests(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(username='testuser', password='password')
@@ -37,18 +37,18 @@ class MembershipModelTests(TestCase):
             description='This is a test family group.',
             owner_id=uuid.uuid4()
         )
-        self.membership = Membership.objects.create(
+        self.family_membership = FamilyMembership.objects.create(
             membership_id=uuid.uuid4(),
             user=self.user,
             family_group=self.family_group
         )
 
-    def test_membership_creation(self):
-        self.assertEqual(self.membership.user, self.user)
-        self.assertEqual(self.membership.family_group, self.family_group)
-        self.assertIsInstance(self.membership.joined_at, timezone.datetime)
-        self.assertIsInstance(self.membership.membership_id, uuid.UUID)
+    def test_family_membership_creation(self):
+        self.assertEqual(self.family_membership.user, self.user)
+        self.assertEqual(self.family_membership.family_group, self.family_group)
+        self.assertIsInstance(self.family_membership.joined_at, timezone.datetime)
+        self.assertIsInstance(self.family_membership.membership_id, uuid.UUID)
     
     def test_str_method(self):
-        expected_str = f"Membership {self.membership.membership_id} for {self.user} in {self.family_group}"
-        self.assertEqual(str(self.membership), expected_str)
+        expected_str = f"Family Membership {self.family_membership.membership_id} for {self.user} in {self.family_group}"
+        self.assertEqual(str(self.family_membership), expected_str)

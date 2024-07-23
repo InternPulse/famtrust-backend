@@ -1,16 +1,17 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import FamilyGroupViewSet, MembershipViewSet
+from famtrust.utils import CustomDefaultRouter
+from .views import FamilyGroupViewSet, FamilyMembershipViewSet
 
 router = CustomDefaultRouter()
 router.register(
     prefix="family-groups",
-    viewset=FamilyGroupsViewSet,
+    viewset=FamilyGroupViewSet,
     basename="family-group",
 )
 router.register(
     prefix="family-memberships",
-    viewset=MembershipsViewSet,
+    viewset=FamilyMembershipViewSet,
     basename="family-membership",
 )
 

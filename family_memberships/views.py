@@ -9,8 +9,8 @@ from rest_framework import (
     viewsets,
 )
 
-from .models import FamilyGroup, Membership
-from .serializers import FamilyGroupSerializer, MembershipSerializer
+from .models import FamilyGroup, FamilyMembership
+from .serializers import FamilyGroupSerializer, FamilyMembershipSerializer
 from famtrust import permissions, utils
 
 
@@ -87,74 +87,74 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
-@extend_schema(tags=["Memberships"], auth=[])
-class MembershipViewSet(viewsets.ModelViewSet):
-    """A collection of endpoints for Membership operations."""
+@extend_schema(tags=["Family Memberships"], auth=[])
+class FamilyMembershipViewSet(viewsets.ModelViewSet):
+    """A collection of endpoints for Family Membership operations."""
 
     http_method_names = ("get", "post", "put", "delete")
-    serializer_class = MembershipSerializer
-    queryset = Membership.objects.all().order_by('joined_at')  # Order by joined_at
+    serializer_class = FamilyMembershipSerializer
+    queryset = FamilyMembership.objects.all().order_by('joined_at')  # Order by joined_at
     permission_classes = (
         permissions.IsAuthenticatedWithUserService,
     )
 
     @extend_schema(
-        summary="Retrieve all memberships",
+        summary="Retrieve all family memberships",
         responses=OpenApiResponse(
-            response=MembershipSerializer,
-            description="Memberships retrieved successfully",
+            response=FamilyMembershipSerializer,
+            description="Family Memberships retrieved successfully",
         ),
     )
     def list(self, request, *args, **kwargs):
-        """List all memberships."""
+        """List all family memberships."""
         return super().list(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Retrieve a single membership",
+        summary="Retrieve a single family membership",
         responses=OpenApiResponse(
-            response=MembershipSerializer,
-            description="Membership retrieved successfully",
+            response=FamilyMembershipSerializer,
+            description="Family Membership retrieved successfully",
         ),
     )
     def retrieve(self, request, *args, **kwargs):
-        """Retrieve a single membership."""
+        """Retrieve a single family membership."""
         return super().retrieve(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Create a new membership",
+        summary="Create a new family membership",
         responses=OpenApiResponse(
-            response=MembershipSerializer,
-            description="Membership created successfully",
+            response=FamilyMembershipSerializer,
+            description="Family Membership created successfully",
         ),
         request=OpenApiRequest(
-            request=MembershipSerializer,
+            request=FamilyMembershipSerializer,
         ),
     )
     def create(self, request, *args, **kwargs):
-        """Create a new membership."""
+        """Create a new family membership."""
         return super().create(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Update an existing membership",
+        summary="Update an existing family membership",
         responses=OpenApiResponse(
-            description="Membership updated successfully",
-            response=MembershipSerializer,
+            description="Family Membership updated successfully",
+            response=FamilyMembershipSerializer,
         ),
         request=OpenApiRequest(
-            request=MembershipSerializer,
+            request=FamilyMembershipSerializer,
         ),
     )
     def update(self, request, *args, **kwargs):
-        """Update an existing membership."""
+        """Update an existing family membership."""
         return super().update(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Delete an existing membership",
+        summary="Delete an existing family membership",
         responses=OpenApiResponse(
             response=None,
-            description="Membership deleted successfully",
+            description="Family Membership deleted successfully",
         ),
     )
     def destroy(self, request, *args, **kwargs):
-        """Deletes an existing membership."""
+        """Deletes an existing family membership."""
         return super().destroy(request, *args, **kwargs)
