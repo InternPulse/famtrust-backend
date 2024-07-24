@@ -70,6 +70,7 @@ class SubAccount(models.Model):
     )
 
     class Meta:
+        db_table = "sub_accounts"
         ordering = ("balance",)
         unique_together = ("family_account", "name")
 
@@ -100,11 +101,12 @@ class FamilyAccount(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=100, null=False, blank=False)
-    # family_group = models.ForeignKey(
+    # family_group = md.ForeignKey(
     #     to="FamilyGroup",
     #     null=False,
     #     db_comment="The family group this account belongs to",
-    #     on_delete=models.CASCADE,
+    #     on_delete=md.CASCADE,
+    #     related_name="family_accounts",
     # )
     family_group = models.UUIDField(null=False)
     created_by = models.UUIDField(
@@ -115,6 +117,7 @@ class FamilyAccount(models.Model):
     updated_at = models.DateTimeField(null=False, blank=False, editable=False)
 
     class Meta:
+        db_table = "family_accounts"
         ordering = ("balance",)
         unique_together = ("name", "family_group")
 
@@ -193,6 +196,7 @@ class FundRequest(models.Model):
     updated_at = models.DateTimeField(null=False, blank=False, editable=False)
 
     class Meta:
+        db_table = "fund_requests"
         ordering = ["-created_at"]
 
     def save(self, *args, **kwargs):
