@@ -115,6 +115,7 @@ class FundRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FundRequest
         fields = "__all__"
+        read_only_fields = ("requested_by",)
 
 
 class FamilyAccountSerializer(serializers.ModelSerializer):
