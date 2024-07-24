@@ -217,8 +217,8 @@ class Pagination(PageNumberPagination):
 
 def is_valid_token(*, token) -> tuple[bool, Any] | tuple[bool, None]:
     """Verifies a user token and returns some user data if valid."""
-    url = f"{settings.EXTERNAL_AUTH_URL}/validate"
-    headers = {"Authorization": f"Bearer {token}"}
+    url = f"{settings.EXTERNAL_AUTH_URL}/{settings.API_VERSION}/validate"
+    headers = {"Authorization": token}
 
     with contextlib.suppress(requests.exceptions.RequestException):
         response = requests.get(url=url, headers=headers)
@@ -228,9 +228,11 @@ def is_valid_token(*, token) -> tuple[bool, Any] | tuple[bool, None]:
         return False, None
 
 
-def fetch_user_data(*, token, user_id):
+def fetch_user_data(
+    *, token: str, user_id: str | None = None
+) -> dict[str, Any] | None:
     """Fetches user data for further usages."""
-    url = f"{settings.EXTERNAL_AUTH_URL}/profiles/{user_id}"
+    url = f"{settings.EXTERNAL_AUTH_URL}/{settings.API_VERSION}/profile"
     response = requests.get(url=url, headers={"Authorization": token})
     response.raise_for_status()
     return response.json()
@@ -244,3 +246,4 @@ def get_family_group_ids(*, user_id: str):
     # return Membership.objects.filter(
     #      user_id=user_id
     # ).value_list("family_group_id", flat=True)
+    return []

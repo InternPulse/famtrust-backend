@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import (
     OpenApiRequest,
@@ -21,13 +22,11 @@ from famtrust import (
 )
 
 
-@extend_schema(tags=["Sub Accounts"], auth=[])
+@extend_schema(tags=["Sub Accounts"])
 class SubAccountViewSet(viewsets.ModelViewSet):
     """A collection of endpoints for SubAccount operations."""
 
-    http_method_names = ("get", "post", "put", "delete")
     serializer_class = serializers.SubAccountSerializer
-    queryset = SubAccount.objects.none()
     search_fields = ("name", "type")
     filterset_fields = ("name", "is_active")
     permission_classes = (
@@ -40,14 +39,16 @@ class SubAccountViewSet(viewsets.ModelViewSet):
         Return sub-accounts for the current user's family accounts.
         """
         user = self.request.ft_user
-        family_groups = utils.get_family_group_ids(user_id=user.get("id"))
-        family_accounts = FamilyAccount.objects.filter(
-            family_group__id__in=family_groups
-        ).values_list("id", flat=True)
-        queryset = SubAccount.objects.filter(
-            family_account__id__in=family_accounts
-        )
+        queryset = SubAccount.objects.filter(owner_id=user.get("id"))
         return queryset
+
+    def perform_create(self, serializer):
+        """
+        Create a new sub-account for the current user's family accounts.
+        """
+        user = self.request.ft_user
+        serializer.validated_data["created_by"] = user.get("id")
+        super().perform_create(serializer)
 
     @extend_schema(
         summary="Retrieve all sub-accounts",
@@ -86,11 +87,14 @@ class SubAccountViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """Create a new sub-account."""
         user = self.request.ft_user
-        self.request.data["created_by"] = user.id
+        self.request.data["created_by"] = user.get("id")
         token = request.headers.get("Authorization")
 
         if owner_id := request.data.get("owner_id"):
-            utils.fetch_user_data(token=token, user_id=owner_id)
+            if owner_id != user.get("id"):
+                utils.fetch_user_data(token=token, user_id=owner_id)
+            else:
+                owner_id = user.get("id")
             request.data["owner_id"] = owner_id
         else:
             raise utils.HTTPException(
@@ -127,17 +131,30 @@ class SubAccountViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
-@extend_schema(tags=["Family Accounts"], auth=[])
+@extend_schema(tags=["Family Accounts"])
 class FamilyAccountViewSet(viewsets.ModelViewSet):
     """A collection of endpoints for FamilyAccount operations."""
 
-    http_method_names = ("get", "post", "put", "delete")
-    queryset = FamilyAccount.objects.all()
     serializer_class = serializers.FamilyAccountSerializer
     permission_classes = (
         permissions.IsAuthenticatedWithUserService,
         permissions.IsAccountOwnerOrCreator,
     )
+
+    def get_queryset(self):
+        """Return family accounts for the current user's family groups."""
+        user = self.request.ft_user
+        family_groups = utils.get_family_group_ids(user_id=user.get("id"))
+        queryset = FamilyAccount.objects.filter(
+            Q(family_group__in=family_groups) | Q(created_by=user.get("id"))
+        )
+        return queryset
+
+    def perform_create(self, serializer):
+        user = self.request.ft_user
+        serializer.validated_data["created_by"] = user.get("id")
+
+        super().perform_create(serializer)
 
     @extend_schema(
         summary="Retrieve all family accounts",
@@ -184,9 +201,6 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
         with that account. For finer control and access, consider creating
         groups and assigning specific accounts to them.
         """
-        user = request.ft_user
-        request.data = request.data["created_by"] = user.get("id")
-
         return super().create(request, *args, **kwargs)
 
     @extend_schema(
@@ -211,7 +225,7 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
-@extend_schema(tags=["Accounts"], auth=[])
+@extend_schema(tags=["Accounts"])
 class AccountViewSet(viewsets.GenericViewSet):
     """
     This is useful for requests that need both sub-accounts and
@@ -233,12 +247,9 @@ class AccountViewSet(viewsets.GenericViewSet):
         sub_accounts = SubAccount.objects.filter(owner_id=user.get("id"))
         family_group_ids = utils.get_family_group_ids(user_id=user.get("id"))
 
-        if family_group_ids:
-            family_accounts = FamilyAccount.objects.filter(
-                family_group__id=family_group_ids
-            )
-        else:
-            family_accounts = FamilyAccount.objects.none()
+        family_accounts = FamilyAccount.objects.filter(
+            family_group__in=family_group_ids
+        )
 
         return sub_accounts, family_accounts
 
@@ -299,22 +310,28 @@ class AccountViewSet(viewsets.GenericViewSet):
         return paginator.get_paginated_response(data)
 
 
-@extend_schema(tags=["Fund Requests"], auth=[])
+@extend_schema(tags=["Fund Requests"])
 class FundRequestViewSet(viewsets.ModelViewSet):
     """A collection of endpoints for fund requests."""
 
-    http_method_names = ("get", "post", "put", "delete")
-    queryset = FundRequest.objects.all()
     serializer_class = serializers.FundRequestSerializer
     permission_classes = (
         permissions.IsAuthenticatedWithUserService,
         permissions.IsFundRequestOwnerOrCreator,
     )
 
+    def perform_create(self, serializer):
+        user = self.request.ft_user
+        serializer.validated_data["requested_by"] = user.get("id")
+        super().perform_create(serializer)
+
+        # TODO: Add logic to send notification to the fund requester and the
+        #  owner of the family account the request was made on.
+
     def get_queryset(self):
         """Retrieves all fund requests for the current user."""
         user = self.request.ft_user
-        return FundRequest.objects.filter(request_by=user.get("id"))
+        return FundRequest.objects.filter(requested_by=user.get("id"))
 
     @extend_schema(
         summary="Retrieve all fund requests",
@@ -356,11 +373,6 @@ class FundRequestViewSet(viewsets.ModelViewSet):
         creating a new fund request, and any additional arguments and
         keyword arguments.
         """
-        user = request.ft_user
-        data = request.data
-
-        data["requested_by"] = user.get("id")
-
         return super().create(request, *args, **kwargs)
 
     @extend_schema(
