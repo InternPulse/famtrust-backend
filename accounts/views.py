@@ -48,6 +48,24 @@ class SubAccountViewSet(viewsets.ModelViewSet):
         """
         user = self.request.ft_user
         serializer.validated_data["created_by"] = user.get("id")
+
+        if user.get("role").get("id") != "admin":
+            raise utils.HTTPException(
+                detail=_("Only admin can create sub-accounts"),
+                code="forbidden",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        self.request.data["created_by"] = user.get("id")
+
+        owner_id = self.request.data.get("owner_id")
+        if not owner_id:
+            raise utils.HTTPException(
+                detail=_("owner_id must be provided"),
+                code="required",
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+
         super().perform_create(serializer)
 
     @extend_schema(
@@ -86,23 +104,6 @@ class SubAccountViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         """Create a new sub-account."""
-        user = self.request.ft_user
-        self.request.data["created_by"] = user.get("id")
-        token = request.headers.get("Authorization")
-
-        if owner_id := request.data.get("owner_id"):
-            if owner_id != user.get("id"):
-                utils.fetch_user_data(token=token, user_id=owner_id)
-            else:
-                owner_id = user.get("id")
-            request.data["owner_id"] = owner_id
-        else:
-            raise utils.HTTPException(
-                detail=_("owner_id must be provided"),
-                code="required",
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            )
-
         return super().create(request, *args, **kwargs)
 
     @extend_schema(
