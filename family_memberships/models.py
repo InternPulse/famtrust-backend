@@ -26,7 +26,7 @@ class FamilyGroup(models.Model):
         db_index=True,
         db_comment=(
             "The ID of the user who created the family group, "
-            "this person is also the owner of the family group.",
+            "this person is also the owner of the family group."
         ),
     )
     is_default = models.BooleanField(
