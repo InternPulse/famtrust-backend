@@ -27,6 +27,14 @@ class ValidateUserMiddleware(MiddlewareMixin):
         logger.debug("Processing request %s", request.path)
         # Allow the API status documentation to be viewable without
         # authentication
+        if request.path.startswith(reverse("admin:index")):
+            return
+
+        if request.path.startswith("/static") or request.path.startswith(
+            "/favicon"
+        ):
+            return
+
         allowed_routes = (
             reverse("api-status"),
             reverse("swagger"),
@@ -38,7 +46,6 @@ class ValidateUserMiddleware(MiddlewareMixin):
             path
             for path in allowed_routes
             if request.path.rstrip("/") == path.rstrip("/")
-            or request.path.startswith(reverse("admin:index"))
         ):
             return
 

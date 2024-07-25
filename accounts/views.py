@@ -31,7 +31,7 @@ class SubAccountViewSet(viewsets.ModelViewSet):
     filterset_fields = ("name", "is_active")
     permission_classes = (
         permissions.IsAuthenticatedWithUserService,
-        permissions.IsAccountOwnerOrCreator,
+        permissions.IsSubAccountOwnerOrCreator,
     )
 
     def get_queryset(self):
@@ -139,7 +139,7 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.FamilyAccountSerializer
     permission_classes = (
         permissions.IsAuthenticatedWithUserService,
-        permissions.IsAccountOwnerOrCreator,
+        permissions.IsFamilyAccountCreatorOrAdmin,
     )
 
     def get_queryset(self):
@@ -154,7 +154,6 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.ft_user
         serializer.validated_data["created_by"] = user.get("id")
-
         super().perform_create(serializer)
 
     @extend_schema(

@@ -102,6 +102,7 @@ def custom_exception_handler(exc, context):
         }
         if "unique" in str(exc.__dict__):
             response.status_code = status.HTTP_409_CONFLICT
+            response.data.pop("non_field_errors", None)
             response.data["error"] = (
                 f"An error occur while {actions.get(view.request.method)} "
                 f"the {basename}"

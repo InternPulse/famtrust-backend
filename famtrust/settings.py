@@ -15,7 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("FAMTRUST_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True #os.environ.get("ENV") == "DEV"
+DEBUG = os.environ.get("ENV") == "DEV"
 
 ALLOWED_HOSTS = ["*"]
 
@@ -39,6 +39,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -72,10 +73,7 @@ WSGI_APPLICATION = "famtrust.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-if os.environ.get("ENV") == "DEV":
-    DB_NAME = os.environ.get("DB_NAME") + "_dev"
-else:
-    DB_NAME = os.environ.get("DB_NAME")
+DB_NAME = os.environ.get("DB_NAME")
 
 if os.environ.get("DB_ENGINE") == "sqlite3":
     DATABASES = {
@@ -132,7 +130,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "static")
 
 # Default primary key field type
