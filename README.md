@@ -1,12 +1,19 @@
-# FamTrust Backend API
+# FamTrust Backend API - Core
 
 ## Project Overview
 
-README.md Backend API
+This is the microservice for the FamTrust project that focuses and handles the core functionalities
+of the project. The core functionalities include:
 
-Live link is at https://
+- Family Groups and Membership Management
+- Family Accounts Management
+- Family Transactions Management
+- Fund Requests Management
 
-Doc link at https://
+
+Live link is at https://core.famtrust.biz/api/v1
+
+Doc link at https://documenter.getpostman.com/view/14404907/2sA3kXCzfa
 
 ## Installation Instructions
 
@@ -17,7 +24,26 @@ Before setting up the project locally, ensure you have the following prerequisit
 - [Python](https://www.python.org/downloads/) (>=3.11.4)
 - [Django](https://www.djangoproject.com/download/)
 - [Django Rest Framework](https://www.django-rest-framework.org/#installation)
-- A Database System (e.g., PostgreSQL, MySQL, SQLite) - [Django Database Installation](https://www.djangoproject.com/download/#database-installation)
+- A Database System (e.g., Postgres, MySQL, SQLite) - [Django Database Installation](https://www.djangoproject.com/download/#database-installation)
+
+Ensure you follow the `env_file_template` to set the required variables
+
+```
+ENV=
+FAMTRUST_SECRET_KEY=
+DB_NAME=
+DB_ENGINE=
+DB_USER=
+DB_PASSWORD=
+DB_HOST=
+DB_PORT=
+EXTERNAL_AUTH_URL=
+API_VERSION=
+PRODUCTION_URL=
+PAGE_SIZE=
+MAX_PAGE_SIZE=
+
+```
 
 ### Installation Steps
 
@@ -25,41 +51,34 @@ Before setting up the project locally, ensure you have the following prerequisit
 
         git clone https://github.com/InternPulse/famtrust-backend.git
 
-
 2. Change into the parent directory:
 
         cd famtrust-backend
-
 
 3. Set up a virtual environment:
 
         python3 -m venv venv
 
-
 4. Activate your virtual environment:
 
         source venv/bin/activate
-
 
 5. Install the Python dependencies:
 
         pip install -r requirements.txt
 
-
-6. Create a .env file and set neccessary secret keys below:
-
+6. Create a .env file and set necessary secret keys below:
 
 7. Apply migrations to create the database schema:
 
         python3 manage.py migrate
 
+8. Start the development server:
+    ```
+    python3 manage.py runserver
+    ```
 
-8. Start the development server: 
- ```
- python3 manage.py runserver
- ```
-
-The API should now be running locally at [http://localhost:8000/](http://localhost:8000/).
+The API should now be running locally at [http://localhost:8000/api/v1](http://localhost:8000/api/v1).
 
 
 # Commit Standards
@@ -67,7 +86,7 @@ The API should now be running locally at [http://localhost:8000/](http://localho
 ## Branches
 
 - **dev** -> pr this branch for everything `backend` related
-- **main** -> **dont touch** this branch, this is what is running in production!
+- **main** -> **don't touch** this branch, this is what is running in production!
 
 ## Contributions
 
@@ -85,7 +104,7 @@ famtrust-backend is open to contributions, but I recommend creating an issue or 
 8. Push changes to your new branch, run `git push -u origin feat-csv-parser`.
 9. Create a pull request to the `dev` branch not `main`.
 10. Ensure to describe your pull request.
-11. > If you've added code that should be tested, add some test examples.
+11. If you've added code that should be tested, add some test examples.
 
 
 # Merging
@@ -94,17 +113,17 @@ Under any circumstances should you merge a pull request on a specific branch to 
 ### _Commit CheatSheet_
 
 | Type     |                          | Description                                                                                                 |
-| -------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+|----------|--------------------------|-------------------------------------------------------------------------------------------------------------|
 | feat     | Features                 | A new feature                                                                                               |
 | fix      | Bug Fixes                | A bug fix                                                                                                   |
 | docs     | Documentation            | Documentation only changes                                                                                  |
-| style    | Styles                   | Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc.)      |
+| style    | Styles                   | Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc.)     |
 | refactor | Code Refactoring         | A code change that neither fixes a bug nor adds a feature                                                   |
 | perf     | Performance Improvements | A code change that improves performance                                                                     |
 | test     | Tests                    | Adding missing tests or correcting existing tests                                                           |
 | build    | Builds                   | Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)         |
 | ci       | Continuous Integrations  | Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs) |
-| chore    | Chores                   | Other changes that don't modify, backend or test files                                                    |
+| chore    | Chores                   | Other changes that don't modify, backend or test files                                                      |
 | revert   | Reverts                  | Reverts a previous commit                                                                                   |
 
 > _Sample Commit Messages_
