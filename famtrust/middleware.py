@@ -63,4 +63,4 @@ class ValidateUserMiddleware(MiddlewareMixin):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        request.ft_user = data.get("data").get("user")
+        request.ft_user = data.get("user")
