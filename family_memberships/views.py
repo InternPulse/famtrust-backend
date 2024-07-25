@@ -1,4 +1,3 @@
-from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import (
     OpenApiRequest,
     OpenApiResponse,
@@ -8,22 +7,60 @@ from rest_framework import (
     status,
     viewsets,
 )
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
-from .models import FamilyGroup, FamilyMembership
-from .serializers import FamilyGroupSerializer, FamilyMembershipSerializer
-from famtrust import permissions, utils
+from famtrust import (
+    permissions,
+    utils,
+)
+from . import models
+from .serializers import (
+    FamilyGroupSerializer,
+    FamilyMembershipInFamilyGroupSerializer,
+    FamilyMembershipSerializer,
+)
 
 
-@extend_schema(tags=["Family Groups"], auth=[])
+@extend_schema(tags=["Family Groups"])
 class FamilyGroupViewSet(viewsets.ModelViewSet):
     """A collection of endpoints for FamilyGroup operations."""
 
-    http_method_names = ("get", "post", "put", "delete")
     serializer_class = FamilyGroupSerializer
-    queryset = FamilyGroup.objects.all().order_by('created_at')  # Order by created_at
-    permission_classes = (
-        permissions.IsAuthenticatedWithUserService,
-    )
+    permission_classes = (permissions.IsAuthenticatedWithUserService,)
+    filterset_fields = ("name", "owner_id", "is_default")
+
+    def get_queryset(self):
+        user = self.request.ft_user
+        return models.FamilyGroup.objects.filter(owner_id=user.get("id"))
+
+    def perform_create(self, serializer):
+        serializer.validated_data["owner_id"] = self.request.ft_user.get("id")
+        super().perform_create(serializer)
+
+    def perform_destroy(self, instance):
+        if instance.is_default:
+            raise utils.HTTPException(
+                detail={
+                    "error": "The default family group cannot be deleted.",
+                    "next_steps": "Assign a new default group before deleting "
+                    "this group.",
+                },
+                status_code=status.HTTP_409_CONFLICT,
+            )
+        if models.FamilyMembership.objects.filter(
+            family_group_id=instance.id
+        ).exists():
+            raise utils.HTTPException(
+                detail={
+                    "error": "The family group has members and cannot be "
+                    "deleted.",
+                    "next_steps": "Remove all members before deleting the "
+                    "group.",
+                },
+                status_code=status.HTTP_409_CONFLICT,
+            )
+        super().perform_destroy(instance)
 
     @extend_schema(
         summary="Retrieve all family groups",
@@ -86,17 +123,32 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
         """Deletes an existing family group."""
         return super().destroy(request, *args, **kwargs)
 
+    @action(
+        methods=["GET"],
+        detail=True,
+        description="Retrieve memberships in the family group",
+        name="family_members",
+    )
+    def members(self, request, pk=None):
+        """Retrieve all memberships in the family group."""
+        family_group = models.FamilyGroup.objects.get(id=pk)
+        family_members = FamilyMembershipInFamilyGroupSerializer(
+            family_group.members.all(), many=True
+        )
+        return Response({"data": family_members.data})
 
-@extend_schema(tags=["Family Memberships"], auth=[])
+
+@extend_schema(tags=["Family Memberships"])
 class FamilyMembershipViewSet(viewsets.ModelViewSet):
     """A collection of endpoints for Family Membership operations."""
 
     http_method_names = ("get", "post", "put", "delete")
     serializer_class = FamilyMembershipSerializer
-    queryset = FamilyMembership.objects.all().order_by('joined_at')  # Order by joined_at
-    permission_classes = (
-        permissions.IsAuthenticatedWithUserService,
-    )
+    permission_classes = (permissions.IsAuthenticatedWithUserService,)
+
+    def get_queryset(self):
+        user = self.request.ft_user
+        return models.FamilyMembership.objects.filter(user_id=user.get("id"))
 
     @extend_schema(
         summary="Retrieve all family memberships",

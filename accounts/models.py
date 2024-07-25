@@ -4,6 +4,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from family_memberships import models as fm_models
+
 
 class SubAccount(models.Model):
     """Model representing a SubAccount."""
@@ -101,14 +103,13 @@ class FamilyAccount(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=100, null=False, blank=False)
-    # family_group = md.ForeignKey(
-    #     to="FamilyGroup",
-    #     null=False,
-    #     db_comment="The family group this account belongs to",
-    #     on_delete=md.CASCADE,
-    #     related_name="family_accounts",
-    # )
-    family_group = models.UUIDField(null=False)
+    family_group = models.ForeignKey(
+        to=fm_models.FamilyGroup,
+        null=False,
+        db_comment="The family group this account belongs to",
+        on_delete=models.CASCADE,
+        related_name="family_accounts",
+    )
     created_by = models.UUIDField(
         null=False, db_comment=_("The user who created this family account")
     )

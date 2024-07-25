@@ -19,6 +19,8 @@ from rest_framework.routers import (
 )
 from rest_framework.views import exception_handler
 
+from family_memberships.models import FamilyMembership
+
 
 class FamTrustAPI(APIRootView):
     """
@@ -93,9 +95,21 @@ def custom_exception_handler(exc, context):
     if response is not None:
         if response.status_code == 404:
             response.data["detail"] = f"{basename} not found."
-
+        actions = {
+            "POST": "creating",
+            "PUT": "updating",
+            "PATCH": "updating",
+        }
         if "unique" in str(exc.__dict__):
             response.status_code = status.HTTP_409_CONFLICT
+            print(response.data.pop("non_field_errors"))
+            response.data["error"] = (
+                f"An error occur while {actions.get(view.request.method)} "
+                f"the {basename}"
+            )
+            response.data["detail"] = (
+                f"A {basename} with the given details already exists."
+            )
 
     return response
 
@@ -232,7 +246,10 @@ def fetch_user_data(
     *, token: str, user_id: str | None = None
 ) -> dict[str, Any] | None:
     """Fetches user data for further usages."""
-    url = f"{settings.EXTERNAL_AUTH_URL}/{settings.API_VERSION}/profile"
+    url = (
+        f"{settings.EXTERNAL_AUTH_URL}/{settings.API_VERSION}/users/"
+        f"{user_id}/"
+    )
     response = requests.get(url=url, headers={"Authorization": token})
     response.raise_for_status()
     return response.json()
@@ -243,7 +260,6 @@ def get_family_group_ids(*, user_id: str):
     Retrieves the family group IDs for the given user, if the user
     belongs to any family group.
     """
-    # return Membership.objects.filter(
-    #      user_id=user_id
-    # ).value_list("family_group_id", flat=True)
-    return []
+    return FamilyMembership.objects.filter(user_id=user_id).values_list(
+        "family_group__id", flat=True
+    )
