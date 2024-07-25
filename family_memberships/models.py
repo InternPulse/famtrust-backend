@@ -65,9 +65,7 @@ class FamilyGroup(models.Model):
 
 
 class FamilyMembership(models.Model):
-    id = models.UUIDField(
-        primary_key=True, default=uuid.uuid4, editable=False
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user_id = models.UUIDField(
         null=False,
         blank=False,
@@ -83,6 +81,7 @@ class FamilyMembership(models.Model):
     class Meta:
         db_table = "family_memberships"
         unique_together = ("user_id", "family_group")
+        ordering = ("-joined_at",)
 
     def __str__(self):
         return (
