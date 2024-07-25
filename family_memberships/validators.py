@@ -118,7 +118,7 @@ class FamilyMembershipValidatorMixin:
         family group."""
         user_id = data.get("user_id")
         family_group = data.get("family_group")
-        group_memberships = family_group.family_members.values_list(
+        group_memberships = family_group.members.values_list(
             "user_id", flat=True
         )
 

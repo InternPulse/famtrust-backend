@@ -91,11 +91,9 @@ class FamilyMembership(models.Model):
         )
 
     def save(self, *args, **kwargs):
-        group_memberships = self.family_group.family_members.values_list(
+        group_memberships = self.family_group.members.values_list(
             "user_id", flat=True
         )
-        print(group_memberships)
-
         if self.user_id in group_memberships:
             raise ValidationError(
                 _("User already exists in the family group.")
