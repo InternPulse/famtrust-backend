@@ -3,13 +3,17 @@ This module defines the serializers (schemas) for API requests and responses
 on accounts related operations.
 """
 
-from rest_framework import serializers
+from rest_framework import (
+    serializers,
+)
 
 from accounts.models import (
     FamilyAccount,
     FundRequest,
     SubAccount,
 )
+from family_memberships.models import FamilyGroup
+from family_memberships.serializers import FamilyGroupSerializer
 
 
 class FundRequestInFamilyAccountSerializer(serializers.ModelSerializer):
@@ -128,11 +132,12 @@ class FamilyAccountSerializer(serializers.ModelSerializer):
         many=True, read_only=True
     )
 
-    # TODO: Update to use the FamilyGroupSerializer when it is defined
-    # family_group = FamilyGroupSerializer(read_only=True)
-    # family_group_id = serializers.PrimaryKeyRelatedField(
-    #     source="family_group", write_only=True, queryset=None
-    # )
+    family_group = FamilyGroupSerializer(read_only=True)
+    family_group_id = serializers.PrimaryKeyRelatedField(
+        source="family_group",
+        write_only=True,
+        queryset=FamilyGroup.objects.all(),
+    )
 
     class Meta:
         model = FamilyAccount
