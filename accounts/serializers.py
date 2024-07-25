@@ -14,6 +14,7 @@ from accounts.models import (
 )
 from family_memberships.models import FamilyGroup
 from family_memberships.serializers import FamilyGroupSerializer
+from accounts import validators
 
 
 class FundRequestInFamilyAccountSerializer(serializers.ModelSerializer):
@@ -100,9 +101,7 @@ class SubAccountInFundRequestSerializer(SubAccountSummarySerializer):
 class FundRequestSerializer(serializers.ModelSerializer):
     """Serializer for FundRequest object."""
 
-    url = serializers.HyperlinkedIdentityField(
-        view_name="fund-request-detail"
-    )
+    url = serializers.HyperlinkedIdentityField(view_name="fund-request-detail")
     source_account = SubAccountInFundRequestSerializer(read_only=True)
     source_account_id = serializers.PrimaryKeyRelatedField(
         queryset=SubAccount.objects.all(),
@@ -122,7 +121,9 @@ class FundRequestSerializer(serializers.ModelSerializer):
         read_only_fields = ("requested_by",)
 
 
-class FamilyAccountSerializer(serializers.ModelSerializer):
+class FamilyAccountSerializer(
+    validators.FamilyAccountValidatorMixin, serializers.ModelSerializer
+):
     """Serializer for FamilyAccount object."""
 
     url = serializers.HyperlinkedIdentityField(

@@ -32,7 +32,9 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.ft_user
-        return models.FamilyGroup.objects.filter(owner_id=user.get("id"))
+        return models.FamilyGroup.objects.filter(
+            members__user_id=user.get("id")
+        )
 
     def perform_create(self, serializer):
         serializer.validated_data["owner_id"] = self.request.ft_user.get("id")
