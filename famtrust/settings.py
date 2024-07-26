@@ -22,9 +22,9 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
-    # "accounts",
-    # "transactions",
+    "accounts",
     "family_memberships",
+    "transactions",
     "drf_spectacular",
     "drf_spectacular_sidecar",
     "corsheaders",
@@ -36,7 +36,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # "drf_yasg",
 ]
 
 MIDDLEWARE = [
@@ -94,7 +93,6 @@ else:
             "PORT": os.environ.get("DB_PORT"),
         }
     }
-}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -168,12 +166,14 @@ REST_FRAMEWORK = {
 
 API_VERSION = os.environ.get("API_VERSION", "v1")
 
-DESCRIPTION = """This microservice hosts the API endpoints related to Accounts
-              and transactions for the FamTrust platform.
-              """
+DESCRIPTION = """This microservice hosts the API endpoints related to
+account-related operations, family-related operations, and transactions.
+"""
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "FamTrust - Accounts and Transactions Microservice",
+    "TITLE": (
+        "FamTrust - Family Management, Accounts & Transactions Microservice"
+    ),
     "DESCRIPTION": DESCRIPTION,
     "VERSION": API_VERSION,
     "SERVE_INCLUDE_SCHEMA": False,
