@@ -1,17 +1,37 @@
+
 from famtrust.utils import CustomDefaultRouter
+from .views import FamilyGroupViewSet, MembershipViewSet
 
-from .views import FamilyGroupsViewSet, MembershipsViewSet
-
+"""
+ Create an instance of CustomDefaultRouter
+"""
 router = CustomDefaultRouter()
+
+
+
+"""
+Register the FamilyGroupViewSet with the router
+"""
 router.register(
     prefix="family-groups",
-    viewset=FamilyGroupsViewSet,
+    viewset=FamilyGroupViewSet,
     basename="family-group",
 )
+
+
+
+"""
+Register the MembershipViewSet with the router
+"""
 router.register(
     prefix="family-memberships",
-    viewset=MembershipsViewSet,
-    basename="family-membership",
+    viewset=MembershipViewSet,
+    basename="membership",
 )
 
+
+
+"""
+ Generate the URL patterns from the router
+"""
 urlpatterns = router.urls

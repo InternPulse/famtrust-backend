@@ -119,10 +119,16 @@ class Pagination(PageNumberPagination):
     page_query_param = "page"
     page_size_query_param = "page_size"
     last_page_strings = ("last", "end")
+    
     try:
-        max_page_size = min(int(os.environ.get("MAX_PAGE_SIZE")), 100)
+        max_page_size = min(int(os.environ.get("MAX_PAGE_SIZE", "100")), 100)
     except ValueError:
         max_page_size = 100
+
+    try:
+        page_size = min(int(os.environ.get("PAGE_SIZE", "25")), 25)
+    except ValueError:
+        page_size = 25
 
     def get_page_size(self, request):
         """Returns the page size."""
