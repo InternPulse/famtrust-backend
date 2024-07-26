@@ -1,4 +1,3 @@
-from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import (
     OpenApiRequest,
     OpenApiResponse,
@@ -8,19 +7,62 @@ from rest_framework import (
     status,
     viewsets,
 )
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import FamilyGroup, Membership
-from .serializers import FamilyGroupSerializer, MembershipSerializer
+from famtrust import (
+    permissions,
+    utils,
+)
+from . import models
+from .serializers import (
+    FamilyGroupSerializer,
+    FamilyMembershipInFamilyGroupSerializer,
+    FamilyMembershipSerializer,
+)
 
 
-@extend_schema(tags=["Family Groups"], auth=[])
+@extend_schema(tags=["Family Groups"])
 class FamilyGroupViewSet(viewsets.ModelViewSet):
     """A collection of endpoints for FamilyGroup operations."""
 
-    http_method_names = ("get", "post", "put", "delete")
-    queryset = FamilyGroup.objects.all()
     serializer_class = FamilyGroupSerializer
+    permission_classes = (permissions.IsAuthenticatedWithUserService,)
+    filterset_fields = ("name", "owner_id", "is_default")
+
+    def get_queryset(self):
+        user = self.request.ft_user
+        return models.FamilyGroup.objects.filter(
+            members__user_id=user.get("id")
+        )
+
+    def perform_create(self, serializer):
+        serializer.validated_data["owner_id"] = self.request.ft_user.get("id")
+        super().perform_create(serializer)
+
+    def perform_destroy(self, instance):
+        if instance.is_default:
+            raise utils.HTTPException(
+                detail={
+                    "error": "The default family group cannot be deleted.",
+                    "next_steps": "Assign a new default group before deleting "
+                    "this group.",
+                },
+                status_code=status.HTTP_409_CONFLICT,
+            )
+        if models.FamilyMembership.objects.filter(
+            family_group_id=instance.id
+        ).exists():
+            raise utils.HTTPException(
+                detail={
+                    "error": "The family group has members and cannot be "
+                    "deleted.",
+                    "next_steps": "Remove all members before deleting the "
+                    "group.",
+                },
+                status_code=status.HTTP_409_CONFLICT,
+            )
+        super().perform_destroy(instance)
 
     @extend_schema(
         summary="Retrieve all family groups",
@@ -30,20 +72,8 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
         ),
     )
     def list(self, request, *args, **kwargs):
-        """
-        This endpoint returns all family groups.
-        """
-        family_groups = self.get_queryset()
-        if not family_groups.exists():
-            response_data = {
-                'status': 404,
-                'success': False,
-                'message': 'No family groups found'
-            }
-            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(family_groups, many=True)
-        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+        """List all family groups."""
+        return super().list(request, *args, **kwargs)
 
     @extend_schema(
         summary="Retrieve a single family group",
@@ -67,27 +97,8 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
         ),
     )
     def create(self, request, *args, **kwargs):
-        """
-        This endpoint is responsible for creating a new family group.
-        """
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            response_data = {
-                'status': 201,
-                'success': True,
-                'message': 'Family group successfully created',
-                'data': serializer.data
-            }
-            return Response(response_data, status=status.HTTP_201_CREATED)
-        
-        response_data = {
-            'status': 400,
-            'success': False,
-            'message': 'Failure while creating a family group',
-            'errors': serializer.errors
-        }
-        return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        """Create a new family group."""
+        return super().create(request, *args, **kwargs)
 
     @extend_schema(
         summary="Update an existing family group",
@@ -114,103 +125,90 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
         """Deletes an existing family group."""
         return super().destroy(request, *args, **kwargs)
 
+    @action(
+        methods=["GET"],
+        detail=True,
+        description="Retrieve memberships in the family group",
+        name="family_members",
+    )
+    def members(self, request, pk=None):
+        """Retrieve all memberships in the family group."""
+        family_group = models.FamilyGroup.objects.get(id=pk)
+        family_members = FamilyMembershipInFamilyGroupSerializer(
+            family_group.members.all(), many=True
+        )
+        return Response({"data": family_members.data})
 
-@extend_schema(tags=["Memberships"], auth=[])
-class MembershipViewSet(viewsets.ModelViewSet):
-    """A collection of endpoints for Membership operations."""
+
+@extend_schema(tags=["Family Memberships"])
+class FamilyMembershipViewSet(viewsets.ModelViewSet):
+    """A collection of endpoints for Family Membership operations."""
 
     http_method_names = ("get", "post", "put", "delete")
-    queryset = Membership.objects.all()
-    serializer_class = MembershipSerializer
+    serializer_class = FamilyMembershipSerializer
+    permission_classes = (permissions.IsAuthenticatedWithUserService,)
+
+    def get_queryset(self):
+        user = self.request.ft_user
+        return models.FamilyMembership.objects.filter(user_id=user.get("id"))
 
     @extend_schema(
-        summary="Retrieve all memberships",
+        summary="Retrieve all family memberships",
         responses=OpenApiResponse(
-            response=MembershipSerializer,
-            description="Memberships retrieved successfully",
+            response=FamilyMembershipSerializer,
+            description="Family Memberships retrieved successfully",
         ),
     )
     def list(self, request, *args, **kwargs):
-        """
-        This endpoint returns all memberships.
-        """
-        memberships = self.get_queryset()
-        if not memberships.exists():
-            response_data = {
-                'status': 404,
-                'success': False,
-                'message': 'No memberships found'
-            }
-            return Response(response_data, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = self.get_serializer(memberships, many=True)
-        return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+        """List all family memberships."""
+        return super().list(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Retrieve a single membership",
+        summary="Retrieve a single family membership",
         responses=OpenApiResponse(
-            response=MembershipSerializer,
-            description="Membership retrieved successfully",
+            response=FamilyMembershipSerializer,
+            description="Family Membership retrieved successfully",
         ),
     )
     def retrieve(self, request, *args, **kwargs):
-        """Retrieve a single membership."""
+        """Retrieve a single family membership."""
         return super().retrieve(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Create a new membership",
+        summary="Create a new family membership",
         responses=OpenApiResponse(
-            response=MembershipSerializer,
-            description="Membership created successfully",
+            response=FamilyMembershipSerializer,
+            description="Family Membership created successfully",
         ),
         request=OpenApiRequest(
-            request=MembershipSerializer,
+            request=FamilyMembershipSerializer,
         ),
     )
     def create(self, request, *args, **kwargs):
-        """
-        This endpoint is responsible for creating a new membership.
-        """
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            response_data = {
-                'status': 201,
-                'success': True,
-                'message': 'Membership successfully created',
-                'data': serializer.data
-            }
-            return Response(response_data, status=status.HTTP_201_CREATED)
-        
-        response_data = {
-            'status': 400,
-            'success': False,
-            'message': 'Failure while creating a member',
-            'errors': serializer.errors
-        }
-        return Response(response_data, status=status.HTTP_400_BAD_REQUEST)
+        """Create a new family membership."""
+        return super().create(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Update an existing membership",
+        summary="Update an existing family membership",
         responses=OpenApiResponse(
-            description="Membership updated successfully",
-            response=MembershipSerializer,
+            description="Family Membership updated successfully",
+            response=FamilyMembershipSerializer,
         ),
         request=OpenApiRequest(
-            request=MembershipSerializer,
+            request=FamilyMembershipSerializer,
         ),
     )
     def update(self, request, *args, **kwargs):
-        """Update an existing membership."""
+        """Update an existing family membership."""
         return super().update(request, *args, **kwargs)
 
     @extend_schema(
-        summary="Delete an existing membership",
+        summary="Delete an existing family membership",
         responses=OpenApiResponse(
             response=None,
-            description="Membership deleted successfully",
+            description="Family Membership deleted successfully",
         ),
     )
     def destroy(self, request, *args, **kwargs):
-        """Deletes an existing membership."""
+        """Deletes an existing family membership."""
         return super().destroy(request, *args, **kwargs)

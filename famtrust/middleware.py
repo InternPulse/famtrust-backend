@@ -4,6 +4,8 @@ verification. The user data is saved in the `request` object as a Python
 dictionary with the name `ft_user` (FamTrust user)
 """
 
+import logging
+
 from django.http import JsonResponse
 from django.urls import reverse
 from django.utils.deprecation import MiddlewareMixin
@@ -11,6 +13,8 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 
 from famtrust import utils
+
+logger = logging.getLogger(__name__)
 
 
 class ValidateUserMiddleware(MiddlewareMixin):
@@ -20,8 +24,17 @@ class ValidateUserMiddleware(MiddlewareMixin):
     def process_request(request):
         """Validates that the access token of a user is valid."""
 
+        logger.debug("Processing request %s", request.path)
         # Allow the API status documentation to be viewable without
         # authentication
+        if request.path.startswith(reverse("admin:index")):
+            return
+
+        if request.path.startswith("/static") or request.path.startswith(
+            "/favicon"
+        ):
+            return
+
         allowed_routes = (
             reverse("api-status"),
             reverse("swagger"),
@@ -57,18 +70,4 @@ class ValidateUserMiddleware(MiddlewareMixin):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        request.ft_user = data
-
-        if "X-User-Id" not in request.headers:
-            return JsonResponse(
-                data={
-                    "error": _("'X-User-Id' must be set in request header"),
-                    "status_code": status.HTTP_400_BAD_REQUEST,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        user = utils.fetch_user_data(
-            token=token, user_id=request.headers.get("X-User-Id")
-        )
-        # update the user in the request object with the fetched user data
-        request.ft_user.update(user)
+        request.ft_user = data.get("user")

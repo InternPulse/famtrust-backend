@@ -7,7 +7,6 @@ from accounts.models import (
 )
 
 
-# Register your models here.
 @admin.register(SubAccount)
 class AccountAdmin(admin.ModelAdmin):
     pass

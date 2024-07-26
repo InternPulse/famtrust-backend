@@ -4,6 +4,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from family_memberships import models as fm_models
+
 
 class SubAccount(models.Model):
     """Model representing a SubAccount."""
@@ -70,6 +72,7 @@ class SubAccount(models.Model):
     )
 
     class Meta:
+        db_table = "sub_accounts"
         ordering = ("balance",)
         unique_together = ("family_account", "name")
 
@@ -100,13 +103,13 @@ class FamilyAccount(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=100, null=False, blank=False)
-    # family_group = models.ForeignKey(
-    #     to="FamilyGroup",
-    #     null=False,
-    #     db_comment="The family group this account belongs to",
-    #     on_delete=models.CASCADE,
-    # )
-    family_group = models.UUIDField(null=False)
+    family_group = models.ForeignKey(
+        to=fm_models.FamilyGroup,
+        null=False,
+        db_comment="The family group this account belongs to",
+        on_delete=models.CASCADE,
+        related_name="family_accounts",
+    )
     created_by = models.UUIDField(
         null=False, db_comment=_("The user who created this family account")
     )
@@ -115,6 +118,7 @@ class FamilyAccount(models.Model):
     updated_at = models.DateTimeField(null=False, blank=False, editable=False)
 
     class Meta:
+        db_table = "family_accounts"
         ordering = ("balance",)
         unique_together = ("name", "family_group")
 
@@ -193,6 +197,7 @@ class FundRequest(models.Model):
     updated_at = models.DateTimeField(null=False, blank=False, editable=False)
 
     class Meta:
+        db_table = "fund_requests"
         ordering = ["-created_at"]
 
     def save(self, *args, **kwargs):

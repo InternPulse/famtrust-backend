@@ -1,61 +1,101 @@
-from django.db import models
+import uuid
 
-# Create your models here.
-from uuid import uuid4
-
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 
 class FamilyGroup(models.Model):
-    """
-    Model representing a Family Group.
-    This is the parent entity that groups various memberships together.
-    """
+    """Model for Family Group."""
 
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    name = models.CharField(max_length=255, null=False, blank=False, db_comment="The name of the family group")
-    description = models.TextField(blank=True, null=True, db_comment="A brief description of the family group")
-    created_at = models.DateTimeField(auto_now_add=True, db_comment="The date and time when the family group was created" )
-    updated_at = models.DateTimeField(auto_now=True, db_comment="The date and time when the family group was last updated")
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+        null=False,
+        blank=False,
+    )
+    name = models.CharField(max_length=100)
+    description = models.CharField(max_length=255, blank=False, null=False)
+    created_at = models.DateTimeField(null=False, blank=False, editable=False)
+    updated_at = models.DateTimeField(null=False, blank=False, editable=False)
+    owner_id = models.UUIDField(
+        null=False,
+        blank=False,
+        db_index=True,
+        db_comment=(
+            "The ID of the user who created the family group, "
+            "this person is also the owner of the family group."
+        ),
+    )
+    is_default = models.BooleanField(
+        default=False,
+        blank=True,
+        null=False,
+        db_comment=(
+            "Indicates if the family group is the default group for "
+            "the user. Only one family group can be the default group."
+            "It is recommended to assign users to a default group when they "
+            "first join the family."
+        ),
+    )
 
     def __str__(self):
-        """Return the name of the family group."""
         return self.name
 
+    def save(self, *args, **kwargs):
+        """
+        Save the new family group and set the `created_at` and
+        `updated_at` fields correctly.
+        """
+        if not self.created_at:
+            current_time = timezone.now()
+            self.created_at = current_time
+            self.updated_at = current_time
+        else:
+            self.updated_at = timezone.now()
+
+        return super(FamilyGroup, self).save(*args, **kwargs)
+
     class Meta:
-        ordering = ['name']
-        db_table = 'family_group'
-        verbose_name = 'Family Group'
-        verbose_name_plural = 'Family Groups'
+        db_table = "family_groups"
+        ordering = ["-created_at"]
+        unique_together = ("name", "owner_id")
 
 
-class Membership(models.Model):
-    """
-    Model representing Membership in a Family Group.
-    This links users to family groups with a specific role.
-    """
-
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    family_group = models.ForeignKey(FamilyGroup, related_name='memberships', on_delete=models.CASCADE, db_comment="The family group this membership belongs to")
-    member_name = models.CharField(max_length=255, null=False, blank=False, db_comment="The name of the member")
-    email = models.EmailField(null=False, blank=False, db_comment="The email address of the member"
+class FamilyMembership(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_id = models.UUIDField(
+        null=False,
+        blank=False,
+        db_comment="The ID of the user joining the family group",
     )
-    ROLE_CHOICES = [
-        ('admin', 'Admin'),
-        ('member', 'Member')
-    ]
-    role = models.CharField(max_length=255, choices=ROLE_CHOICES, default='member', null=False, blank=False,db_comment="The role of the member within the family group")
-    joined_at = models.DateTimeField(auto_now_add=True, db_comment="The date and time when the member joined the family group"
+    family_group = models.ForeignKey(
+        "FamilyGroup",
+        on_delete=models.CASCADE,
+        related_name="members",
     )
+    joined_at = models.DateTimeField(auto_now_add=True, editable=False)
+
+    class Meta:
+        db_table = "family_memberships"
+        unique_together = ("user_id", "family_group")
+        ordering = ("-joined_at",)
 
     def __str__(self):
-        """Return the name of the member."""
-        return self.member_name
+        return (
+            f"Membership {self.id} for {self.user_id} in"
+            f" {self.family_group}"
+        )
 
-    class Meta:
-        ordering = ['family_group', 'member_name']
-        db_table = 'membership'
-        unique_together = ('family_group', 'email')
-        verbose_name = 'Membership'
-        verbose_name_plural = 'Memberships'
+    def save(self, *args, **kwargs):
+        group_memberships = self.family_group.members.values_list(
+            "user_id", flat=True
+        )
+        if self.user_id in group_memberships:
+            raise ValidationError(
+                _("User already exists in the family group.")
+            )
+
+        super(FamilyMembership, self).save(*args, **kwargs)

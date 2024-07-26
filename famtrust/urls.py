@@ -59,9 +59,7 @@ def api_status(_):
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/status/", api_status, name="api-status"),
-    path(
-        f"{api_prefix}/schema/", SpectacularAPIView.as_view(), name="schema"
-    ),
+    path(f"{api_prefix}/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         f"{api_prefix}/swagger/",
         SpectacularSwaggerView.as_view(url_name="schema"),

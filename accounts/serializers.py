@@ -3,13 +3,18 @@ This module defines the serializers (schemas) for API requests and responses
 on accounts related operations.
 """
 
-from rest_framework import serializers
+from rest_framework import (
+    serializers,
+)
 
 from accounts.models import (
     FamilyAccount,
     FundRequest,
     SubAccount,
 )
+from family_memberships.models import FamilyGroup
+from family_memberships.serializers import FamilyGroupSerializer
+from accounts import validators
 
 
 class FundRequestInFamilyAccountSerializer(serializers.ModelSerializer):
@@ -96,9 +101,7 @@ class SubAccountInFundRequestSerializer(SubAccountSummarySerializer):
 class FundRequestSerializer(serializers.ModelSerializer):
     """Serializer for FundRequest object."""
 
-    url = serializers.HyperlinkedIdentityField(
-        view_name="fund-request-detail"
-    )
+    url = serializers.HyperlinkedIdentityField(view_name="fund-request-detail")
     source_account = SubAccountInFundRequestSerializer(read_only=True)
     source_account_id = serializers.PrimaryKeyRelatedField(
         queryset=SubAccount.objects.all(),
@@ -115,9 +118,12 @@ class FundRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = FundRequest
         fields = "__all__"
+        read_only_fields = ("requested_by",)
 
 
-class FamilyAccountSerializer(serializers.ModelSerializer):
+class FamilyAccountSerializer(
+    validators.FamilyAccountValidatorMixin, serializers.ModelSerializer
+):
     """Serializer for FamilyAccount object."""
 
     url = serializers.HyperlinkedIdentityField(
@@ -127,11 +133,12 @@ class FamilyAccountSerializer(serializers.ModelSerializer):
         many=True, read_only=True
     )
 
-    # TODO: Update to use the FamilyGroupSerializer when it is defined
-    # family_group = FamilyGroupSerializer(read_only=True)
-    # family_group_id = serializers.PrimaryKeyRelatedField(
-    #     source="family_group", write_only=True, queryset=None
-    # )
+    family_group = FamilyGroupSerializer(read_only=True)
+    family_group_id = serializers.PrimaryKeyRelatedField(
+        source="family_group",
+        write_only=True,
+        queryset=FamilyGroup.objects.all(),
+    )
 
     class Meta:
         model = FamilyAccount

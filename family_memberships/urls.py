@@ -1,10 +1,8 @@
-
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from famtrust.utils import CustomDefaultRouter
-from .views import FamilyGroupViewSet, MembershipViewSet
+from .views import FamilyGroupViewSet, FamilyMembershipViewSet
 
-"""
- Create an instance of CustomDefaultRouter
-"""
 router = CustomDefaultRouter()
 
 
@@ -25,13 +23,11 @@ Register the MembershipViewSet with the router
 """
 router.register(
     prefix="family-memberships",
-    viewset=MembershipViewSet,
-    basename="membership",
+    viewset=FamilyMembershipViewSet,
+    basename="family-membership",
 )
 
-
-
-"""
- Generate the URL patterns from the router
-"""
-urlpatterns = router.urls
+# The API URLs are now determined automatically by the router.
+urlpatterns = [
+    path('', include(router.urls)),
+]
