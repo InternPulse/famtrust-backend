@@ -17,6 +17,8 @@ SECRET_KEY = os.environ.get("FAMTRUST_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("ENV") == "DEV"
 
+# WhiteNoise configuration
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 ALLOWED_HOSTS = ["*"]
 
 # Application definition
@@ -36,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # 'whitenoise.runserver_nostatic', 
 ]
 
 MIDDLEWARE = [

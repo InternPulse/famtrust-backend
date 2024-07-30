@@ -3,6 +3,7 @@ from drf_spectacular.utils import (
     OpenApiResponse,
     extend_schema,
 )
+
 from rest_framework import (
     status,
     viewsets,
@@ -21,6 +22,8 @@ from .serializers import (
     FamilyMembershipSerializer,
 )
 
+from django.db.models import Q
+
 
 @extend_schema(tags=["Family Groups"])
 class FamilyGroupViewSet(viewsets.ModelViewSet):
@@ -33,7 +36,7 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.ft_user
         return models.FamilyGroup.objects.filter(
-            members__user_id=user.get("id")
+            Q(members__user_id=user.get("id")) | Q(owner_id=user.get("id"))
         )
 
     def perform_create(self, serializer):
@@ -212,3 +215,9 @@ class FamilyMembershipViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """Deletes an existing family membership."""
         return super().destroy(request, *args, **kwargs)
+    
+
+
+
+
+
