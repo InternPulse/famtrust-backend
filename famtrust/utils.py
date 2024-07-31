@@ -59,6 +59,10 @@ class FamTrustAPI(APIRootView):
             new_key = key.replace("-", "_")
             updated_data[new_key] = value
 
+        # other services URL
+        updated_data["users"] = settings.EXTERNAL_AUTH_URL + "/v1/users"
+        updated_data["profile"] = settings.EXTERNAL_AUTH_URL + "/v1/profile"
+
         response.data = updated_data
 
         updated_data = {}
@@ -156,7 +160,7 @@ class Pagination(PageNumberPagination):
         if size <= 0 or size > self.max_page_size:
             raise HTTPException(
                 detail="Page size must be a positive integer and not exceed "
-                f"{self.max_page_size}",
+                       f"{self.max_page_size}",
                 code="invalid_page_size",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -257,7 +261,7 @@ def fetch_user_data(
 
 def get_family_group_ids(*, user_id: str):
     """
-    Retrieves the family group IDs for the given user, if the user
+    Retrieves the family group IDs for the given user if the user
     belongs to any family group.
     """
     return FamilyMembership.objects.filter(user_id=user_id).values_list(
