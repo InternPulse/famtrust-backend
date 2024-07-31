@@ -37,26 +37,33 @@ class SubAccountViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """
         Return sub-accounts for the current user's family accounts.
+
+        Administrators will see all sub-accounts within the family accounts
+        linked to the groups they created and own. Members will see only their
+        sub-accounts.
         """
         user = self.request.ft_user
-        queryset = SubAccount.objects.filter(owner_id=user.get("id"))
-        return queryset
+        if user.isAdmin:
+            return SubAccount.objects.filter(
+                family_account__family_group__owner_id=user.id
+            )
+        return SubAccount.objects.filter(owner_id=user.id)
 
     def perform_create(self, serializer):
         """
         Create a new sub-account for the current user's family accounts.
         """
         user = self.request.ft_user
-        serializer.validated_data["created_by"] = user.get("id")
+        serializer.validated_data["created_by"] = user.id
 
-        if user.get("role").get("id") != "admin":
+        if not user.isAdmin:
             raise utils.HTTPException(
                 detail=_("Only admin can create sub-accounts"),
                 code="forbidden",
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
-        self.request.data["created_by"] = user.get("id")
+        self.request.data["created_by"] = user.id
 
         owner_id = self.request.data.get("owner_id")
         if not owner_id:
@@ -141,19 +148,21 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
         permissions.IsAuthenticatedWithUserService,
         permissions.IsFamilyAccountCreatorOrAdmin,
     )
+    filterset_fields = ("name", "created_by")
+    search_fields = ("name", "created_by")
 
     def get_queryset(self):
         """Return family accounts for the current user's family groups."""
         user = self.request.ft_user
-        family_groups = utils.get_family_group_ids(user_id=user.get("id"))
+        family_groups = utils.get_family_group_ids(user_id=user.id)
         queryset = FamilyAccount.objects.filter(
-            Q(family_group__in=family_groups) | Q(created_by=user.get("id"))
+            Q(family_group__in=family_groups) | Q(created_by=user.id)
         )
         return queryset
 
     def perform_create(self, serializer):
         user = self.request.ft_user
-        serializer.validated_data["created_by"] = user.get("id")
+        serializer.validated_data["created_by"] = user.id
         super().perform_create(serializer)
 
     @extend_schema(
@@ -194,8 +203,8 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
         appropriate permissions. The sole purpose of this endpoint is to
         create new family accounts for a specific family group.
 
-        Everyone who is in the family group that this account is created for
-        can withdraw of interact with the account. A default family account
+        Everyone in the family group that this account is created for
+        can withdraw or interact with the account. A default family account
         will be created when a user is first registered on the platform. If
         no further accounts are created, everyone will be allowed to interact
         with that account. For finer control and access, consider creating
@@ -244,8 +253,8 @@ class AccountViewSet(viewsets.GenericViewSet):
         """
         user = self.request.ft_user
 
-        sub_accounts = SubAccount.objects.filter(owner_id=user.get("id"))
-        family_group_ids = utils.get_family_group_ids(user_id=user.get("id"))
+        sub_accounts = SubAccount.objects.filter(owner_id=user.id)
+        family_group_ids = utils.get_family_group_ids(user_id=user.id)
 
         family_accounts = FamilyAccount.objects.filter(
             family_group__in=family_group_ids
@@ -322,7 +331,7 @@ class FundRequestViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.ft_user
-        serializer.validated_data["requested_by"] = user.get("id")
+        serializer.validated_data["requested_by"] = user.id
         super().perform_create(serializer)
 
         # TODO: Add logic to send notification to the fund requester and the
@@ -331,7 +340,7 @@ class FundRequestViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Retrieves all fund requests for the current user."""
         user = self.request.ft_user
-        return FundRequest.objects.filter(requested_by=user.get("id"))
+        return FundRequest.objects.filter(requested_by=user.id)
 
     @extend_schema(
         summary="Retrieve all fund requests",

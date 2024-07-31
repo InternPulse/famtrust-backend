@@ -1,3 +1,4 @@
+from django.db.models import Q
 from drf_spectacular.utils import (
     OpenApiRequest,
     OpenApiResponse,
@@ -31,14 +32,21 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
     filterset_fields = ("name", "owner_id", "is_default")
 
     def get_queryset(self):
+        """Returns a queryset of FamilyGroup objects.
+
+        Members of a family can see only the groups they belong to, while
+        Admins can see both the groups they own and the groups they belong to.
+        """
         user = self.request.ft_user
         return models.FamilyGroup.objects.filter(
-            members__user_id=user.get("id")
+            Q(members__user_id=user.id) | Q(owner_id=user.id)
         )
 
     def perform_create(self, serializer):
-        serializer.validated_data["owner_id"] = self.request.ft_user.get("id")
-        super().perform_create(serializer)
+        serializer.validated_data["owner_id"] = self.request.ft_user.id
+        super().perform_create(
+            serializer
+        )
 
     def perform_destroy(self, instance):
         if instance.is_default:
@@ -46,23 +54,30 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
                 detail={
                     "error": "The default family group cannot be deleted.",
                     "next_steps": "Assign a new default group before deleting "
-                    "this group.",
+                                  "this group.",
                 },
                 status_code=status.HTTP_409_CONFLICT,
             )
+        if "force" in self.request.data:
+            if self.request.data["force"]:
+                return super().perform_destroy(
+                    instance
+                )
         if models.FamilyMembership.objects.filter(
             family_group_id=instance.id
         ).exists():
             raise utils.HTTPException(
                 detail={
                     "error": "The family group has members and cannot be "
-                    "deleted.",
-                    "next_steps": "Remove all members before deleting the "
-                    "group.",
+                             "deleted.",
+                    "next_steps": "Move all members to another group "
+                                  "before deleting the group.",
                 },
                 status_code=status.HTTP_409_CONFLICT,
             )
-        super().perform_destroy(instance)
+        return super().perform_destroy(
+            instance
+        )
 
     @extend_schema(
         summary="Retrieve all family groups",
@@ -73,7 +88,11 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         """List all family groups."""
-        return super().list(request, *args, **kwargs)
+        return super().list(
+            request,
+            *args,
+            **kwargs
+        )
 
     @extend_schema(
         summary="Retrieve a single family group",
@@ -84,7 +103,11 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
     )
     def retrieve(self, request, *args, **kwargs):
         """Retrieve a single family group."""
-        return super().retrieve(request, *args, **kwargs)
+        return super().retrieve(
+            request,
+            *args,
+            **kwargs
+        )
 
     @extend_schema(
         summary="Create a new family group",
@@ -98,7 +121,11 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         """Create a new family group."""
-        return super().create(request, *args, **kwargs)
+        return super().create(
+            request,
+            *args,
+            **kwargs
+        )
 
     @extend_schema(
         summary="Update an existing family group",
@@ -112,7 +139,11 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
     )
     def update(self, request, *args, **kwargs):
         """Update an existing family group."""
-        return super().update(request, *args, **kwargs)
+        return super().update(
+            request,
+            *args,
+            **kwargs
+        )
 
     @extend_schema(
         summary="Delete an existing family group",
@@ -123,7 +154,11 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         """Deletes an existing family group."""
-        return super().destroy(request, *args, **kwargs)
+        return super().destroy(
+            request,
+            *args,
+            **kwargs
+        )
 
     @action(
         methods=["GET"],
@@ -133,11 +168,22 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
     )
     def members(self, request, pk=None):
         """Retrieve all memberships in the family group."""
-        family_group = models.FamilyGroup.objects.get(id=pk)
+        try:
+            family_group = models.FamilyGroup.objects.get(
+                id=pk, members__user_id=request.ft_user.id
+            )
+        except models.FamilyGroup.DoesNotExist:
+            raise utils.HTTPException(
+                detail="Family group not found",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
         family_members = FamilyMembershipInFamilyGroupSerializer(
-            family_group.members.all(), many=True
+            family_group.members.all(),
+            many=True
         )
-        return Response({"data": family_members.data})
+        return Response(
+            {"data": family_members.data}
+        )
 
 
 @extend_schema(tags=["Family Memberships"])
@@ -150,7 +196,7 @@ class FamilyMembershipViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.ft_user
-        return models.FamilyMembership.objects.filter(user_id=user.get("id"))
+        return models.FamilyMembership.objects.filter(user_id=user.id)
 
     @extend_schema(
         summary="Retrieve all family memberships",
@@ -161,7 +207,11 @@ class FamilyMembershipViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         """List all family memberships."""
-        return super().list(request, *args, **kwargs)
+        return super().list(
+            request,
+            *args,
+            **kwargs
+        )
 
     @extend_schema(
         summary="Retrieve a single family membership",
@@ -172,7 +222,11 @@ class FamilyMembershipViewSet(viewsets.ModelViewSet):
     )
     def retrieve(self, request, *args, **kwargs):
         """Retrieve a single family membership."""
-        return super().retrieve(request, *args, **kwargs)
+        return super().retrieve(
+            request,
+            *args,
+            **kwargs
+        )
 
     @extend_schema(
         summary="Create a new family membership",
@@ -186,7 +240,11 @@ class FamilyMembershipViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         """Create a new family membership."""
-        return super().create(request, *args, **kwargs)
+        return super().create(
+            request,
+            *args,
+            **kwargs
+        )
 
     @extend_schema(
         summary="Update an existing family membership",
@@ -200,7 +258,11 @@ class FamilyMembershipViewSet(viewsets.ModelViewSet):
     )
     def update(self, request, *args, **kwargs):
         """Update an existing family membership."""
-        return super().update(request, *args, **kwargs)
+        return super().update(
+            request,
+            *args,
+            **kwargs
+        )
 
     @extend_schema(
         summary="Delete an existing family membership",
@@ -211,4 +273,8 @@ class FamilyMembershipViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         """Deletes an existing family membership."""
-        return super().destroy(request, *args, **kwargs)
+        return super().destroy(
+            request,
+            *args,
+            **kwargs
+        )
