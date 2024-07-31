@@ -71,3 +71,15 @@ class ValidateUserMiddleware(MiddlewareMixin):
             )
 
         request.ft_user = data.get("user")
+
+
+
+
+
+
+
+
+
+
+
+
