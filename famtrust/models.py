@@ -21,6 +21,6 @@ class User(BaseModel):
     defaultGroup: UUID
     has2FA: bool
     isVerified: bool
-    isFreezed: bool  # TODO: Change to isFrozen once the API is updated
+    isFrozen: bool
     lastLogin: datetime
     isAdmin: bool
