@@ -25,7 +25,7 @@ class FamilyGroupSerializer(
         filterset_fields = ("is_default",)
 
 
-class FamilyGroupInMembershipSerializer(serializers.ModelSerializer):
+class FamilyGroupSummarySerializer(serializers.ModelSerializer):
     """Serializer for FamilyGroup object in FamilyMembership."""
 
     class Meta:
@@ -40,7 +40,7 @@ class FamilyMembershipSerializer(
         model = FamilyMembership
         fields = "__all__"
 
-    family_group = FamilyGroupInMembershipSerializer(read_only=True)
+    family_group = FamilyGroupSummarySerializer(read_only=True)
     family_group_id = serializers.PrimaryKeyRelatedField(
         queryset=FamilyGroup.objects.all(),
         write_only=True,
@@ -57,7 +57,7 @@ class FamilyMembershipSerializer(
                         "An error occurred while creating the "
                         "family membership"
                     ),
-                    "details": e.args[0],
+                    "details": _(e.args[0]),
                 },
                 status_code=(
                     status.HTTP_409_CONFLICT
