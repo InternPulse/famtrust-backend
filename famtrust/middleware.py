@@ -1,9 +1,19 @@
 """
 This module defines the middleware to perform user authentication
-verification. The user data is saved in the `request` object as a Python
-dictionary with the name `ft_user` (FamTrust user)
-"""
+verification. The user data is saved in the `request` object as a Pydantic
+model with the name `ft_user` (FamTrust user)
 
+Example usage:
+
+```python
+
+user = request.ft_user
+print(user.id)
+
+if user.isAdmin:
+    print("User is an admin")
+```
+"""
 import logging
 
 from django.http import JsonResponse
@@ -12,7 +22,7 @@ from django.utils.deprecation import MiddlewareMixin
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 
-from famtrust import utils
+from famtrust import models, utils
 
 logger = logging.getLogger(__name__)
 
@@ -70,4 +80,12 @@ class ValidateUserMiddleware(MiddlewareMixin):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        request.ft_user = data.get("user")
+        if not data:
+            raise utils.HTTPException(
+                detail="Server error occurred",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        user_data = data.get("user")
+        admin = user_data.get("role").get("id") == "admin"
+
+        request.ft_user = models.User(**user_data, isAdmin=admin)
