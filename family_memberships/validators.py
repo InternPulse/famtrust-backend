@@ -3,6 +3,7 @@ Mixins to validate the data given before creating or updating a family
 membership or family group.
 """
 
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 
 from family_memberships import models
@@ -13,32 +14,33 @@ class FamilyGroupValidatorMixin:
     """Mixin to validate the data given before creating or
     updating a family group."""
 
-    def get_user_data(self):
+    def get_user(self):
         """Get the user data from the request."""
         return self.context["request"].ft_user
 
     def validate(self, data):
         """Validate the data given before creating or updating a
         family group."""
-        self.validate_user_is_admin()
-        self.validate_default_group_exists(data)
-        self.validate_unique_together(data)
+        self._validate_user_is_admin()
+        self._validate_default_group_exists(data)
+        self._validate_unique_together(data)
 
-        print("no errors")
         return data
 
-    def validate_default_group_exists(self, data):
+    def _validate_default_group_exists(self, data):
         """Validate that only one family group can be the default group."""
-        user_data = self.get_user_data()
+        user = self.get_user()
         user_default_group = models.FamilyGroup.objects.filter(
-            owner_id=user_data.get("id"),
+            owner_id=user.id,
             is_default=True,
         )
         if data.get("is_default") and user_default_group.exists():
             raise utils.HTTPException(
                 detail={
-                    "error": "A default group already exists for this "
-                    "user."
+                    "error": _(
+                        "A default group already exists for this "
+                        "user."
+                        )
                 },
                 status_code=status.HTTP_409_CONFLICT,
             )
@@ -46,38 +48,44 @@ class FamilyGroupValidatorMixin:
         elif not user_default_group.exists() and not data.get("is_default"):
             raise utils.HTTPException(
                 detail={
-                    "error": "A default group must exist before creating a "
-                    "new group."
+                    "error": _(
+                        "A default group must exist before creating a "
+                        "new group."
+                    )
                 },
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
-    def validate_user_is_admin(self):
+    def _validate_user_is_admin(self):
         """Validate that the user is an admin before creating a
         family group."""
-        user = self.get_user_data()
-        if user.get("role").get("id") != "admin":
+        user = self.get_user()
+        if not user.isAdmin:
             raise utils.HTTPException(
                 detail={
-                    "error": "The user must be an admin to create a family "
-                    "group."
+                    "error": _(
+                        "The user must be an admin to create a family "
+                        "group."
+                    )
                 },
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
-    def validate_unique_together(self, data):
+    def _validate_unique_together(self, data):
         """Validate that the name and owner_id of the family group are
         unique together."""
         family_group = models.FamilyGroup.objects.filter(
-            name=data.get("name"), owner_id=self.get_user_data().get("id")
+            name=data.get("name"), owner_id=self.get_user().id
         )
 
         print(family_group)
         if family_group.exists():
             raise utils.HTTPException(
                 detail={
-                    "error": "A family group with the same name already "
-                    "exists for this user."
+                    "error": _(
+                        "A family group with the same name already "
+                        "exists for this user."
+                    )
                 },
                 status_code=status.HTTP_409_CONFLICT,
             )
@@ -94,26 +102,28 @@ class FamilyMembershipValidatorMixin:
     def validate(self, data):
         """Validate the data given before creating or updating a
         family membership."""
-        self.validate_user_is_admin()
-        self.validate_user_is_not_already_in_group(data)
+        self._validate_user_is_admin()
+        self._validate_user_is_not_already_in_group(data)
 
         return data
 
-    def validate_user_is_admin(self):
+    def _validate_user_is_admin(self):
         """Validate that the user is an admin before creating a
         family membership."""
         user = self.get_user_data()
-        if user.get("role").get("id") != "admin":
+        if not user.isAdmin:
             raise utils.HTTPException(
                 detail={
-                    "error": "The user must be an admin to create a family "
-                    "membership."
+                    "error": _(
+                        "The user must be an admin to create a family "
+                        "membership."
+                    )
                 },
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
     @staticmethod
-    def validate_user_is_not_already_in_group(data):
+    def _validate_user_is_not_already_in_group(data):
         """Validate that the user is not already a member of the
         family group."""
         user_id = data.get("user_id")
@@ -133,14 +143,16 @@ class FamilyMembershipValidatorMixin:
         user_id = data.get("user_id")
         user = self.get_user_data()
         default_group = models.FamilyGroup.objects.filter(
-            owner_id=user.get("id"), is_default=True
+            owner_id=user.id, is_default=True
         ).first()
 
         if not default_group:
             raise utils.HTTPException(
                 detail={
-                    "error": "The user must be part of the default group "
-                    "before joining another group."
+                    "error": _(
+                        "The user must be part of the default group "
+                        "before joining another group."
+                    )
                 },
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -152,8 +164,10 @@ class FamilyMembershipValidatorMixin:
         if user_id not in group_memberships:
             raise utils.HTTPException(
                 detail={
-                    "error": "The user must be part of the default group "
-                    "before joining another group."
+                    "error": _(
+                        "The user must be part of the default group "
+                        "before joining another group."
+                    )
                 },
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
