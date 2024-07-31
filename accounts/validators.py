@@ -1,41 +1,50 @@
-"""Validators for account related operations"""
-
 from django.utils.translation import gettext_lazy as _
-from rest_framework import (
-    status,
-)
+from rest_framework import status
 
+from accounts import models
 from family_memberships import models as fam_models
 from famtrust import utils
+from famtrust.validators import BaseValidatorMixin
 
 
-class FamilyAccountValidatorMixin:
+class SubAccountValidatorMixin(BaseValidatorMixin):
+    """Validators for Sub Account operations."""
+
+    model = models.SubAccount
+    friendly_name = "sub account"
 
     def validate(self, data):
-        self._validate_user_is_admin()
-        self._validate_user_is_in_default_group(data)
-        self._validate_member_in_family_group(data)
+        super().validate(data)
+        self._validate_user_has_access_to_family_account(data)
 
         return data
 
-    def _validate_user_is_in_default_group(self, data):
-        user = self.context["request"].ft_user
-        default_family = fam_models.FamilyGroup.objects.filter(
-            is_default=True, members__user_id=user["id"]
-        )
-        if not default_family.exists():
+    def _validate_user_has_access_to_family_account(self, data):
+        family_account: models.FamilyAccount = data["family_account"]
+        user = self.get_user()
+
+        if not family_account.family_group.members.filter(
+            user_id=user.id
+        ).exists():
             raise utils.HTTPException(
-                detail=_("User does not have a default family group"),
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=_(
+                    "User is not a member of the group this family account "
+                    "is linked to"
+                ),
+                status_code=status.HTTP_400_BAD_REQUEST
             )
 
-    def _validate_user_is_admin(self):
-        user = self.context["request"].ft_user
-        if user.get("role").get("id") != "admin":
-            raise utils.HTTPException(
-                detail=_("Only family admins can perform this operation."),
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
+
+class FamilyAccountValidatorMixin(BaseValidatorMixin):
+    """Validators for Family Account operations."""
+
+    model = models.FamilyAccount
+    friendly_name = "family account"
+
+    def validate(self, data):
+        super().validate(data)
+        self._validate_member_in_family_group(data)
+        return data
 
     def _validate_member_in_family_group(self, data):
         user = self.context["request"].ft_user
@@ -49,7 +58,7 @@ class FamilyAccountValidatorMixin:
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
-        if not family_group.members.filter(user_id=user["id"]).exists():
+        if not family_group.members.filter(user_id=user.id).exists():
             raise utils.HTTPException(
                 detail=_("User is not a member of the family group"),
                 status_code=status.HTTP_403_FORBIDDEN,
