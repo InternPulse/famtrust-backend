@@ -20,7 +20,6 @@ from transactions import models
 class TransactionSerializer(serializers.ModelSerializer):
     """Serializer for Transaction model."""
 
-    url = serializers.HyperlinkedIdentityField(view_name="transaction-detail")
     family_source_account = (
         accounts_serializers.FamilyAccountSummarySerializer(
             read_only=True,

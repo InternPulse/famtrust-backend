@@ -2,19 +2,18 @@
 This module defines the serializers (schemas) for API requests and responses
 on accounts related operations.
 """
-
 from rest_framework import (
     serializers,
 )
 
+from accounts import validators
 from accounts.models import (
     FamilyAccount,
     FundRequest,
     SubAccount,
 )
 from family_memberships.models import FamilyGroup
-from family_memberships.serializers import FamilyGroupSerializer
-from accounts import validators
+from family_memberships.serializers import FamilyGroupSummarySerializer
 
 
 class FundRequestInFamilyAccountSerializer(serializers.ModelSerializer):
@@ -49,19 +48,18 @@ class FundRequestInFamilyAccountSerializer(serializers.ModelSerializer):
 class FamilyAccountSummarySerializer(serializers.ModelSerializer):
     """Serializer for FamilyAccount object in accounts summary."""
 
-    url = serializers.HyperlinkedIdentityField(
-        view_name="family-account-detail"
-    )
+    family_group = FamilyGroupSummarySerializer(read_only=True)
 
     class Meta:
         model = FamilyAccount
-        fields = ("id", "url", "name", "family_group", "balance")
+        fields = ("id", "name", "balance", "family_group")
 
 
-class SubAccountSerializer(serializers.ModelSerializer):
+class SubAccountSerializer(
+    validators.SubAccountValidatorMixin, serializers.ModelSerializer
+):
     """Serializer for SubAccount object."""
 
-    url = serializers.HyperlinkedIdentityField(view_name="sub-account-detail")
     family_account = FamilyAccountSummarySerializer(read_only=True)
     family_account_id = serializers.PrimaryKeyRelatedField(
         queryset=FamilyAccount.objects.all(),
@@ -95,13 +93,12 @@ class SubAccountInFundRequestSerializer(SubAccountSummarySerializer):
 
     class Meta:
         model = SubAccount
-        fields = ("id", "url", "name", "balance", "type")
+        fields = ("id", "name", "balance", "type")
 
 
 class FundRequestSerializer(serializers.ModelSerializer):
     """Serializer for FundRequest object."""
 
-    url = serializers.HyperlinkedIdentityField(view_name="fund-request-detail")
     source_account = SubAccountInFundRequestSerializer(read_only=True)
     source_account_id = serializers.PrimaryKeyRelatedField(
         queryset=SubAccount.objects.all(),
@@ -126,14 +123,11 @@ class FamilyAccountSerializer(
 ):
     """Serializer for FamilyAccount object."""
 
-    url = serializers.HyperlinkedIdentityField(
-        view_name="family-account-detail"
-    )
     fund_requests = FundRequestInFamilyAccountSerializer(
         many=True, read_only=True
     )
 
-    family_group = FamilyGroupSerializer(read_only=True)
+    family_group = FamilyGroupSummarySerializer(read_only=True)
     family_group_id = serializers.PrimaryKeyRelatedField(
         source="family_group",
         write_only=True,

@@ -1,4 +1,5 @@
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 from rest_framework.renderers import JSONRenderer
 
 
@@ -76,7 +77,7 @@ class CustomJSONRenderer(JSONRenderer):
             data_name = "endpoints"
 
         response_data = {
-            "message": message,
+            "message": _(message),
             "status_code": status_code,
             "success": success,
         }
