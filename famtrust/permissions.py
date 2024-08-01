@@ -1,6 +1,6 @@
 """
 This module defines permissions that ensure that users have the required
-privileges before performing an action
+privileges before performing an action.
 """
 
 from django.utils.translation import gettext_lazy as _
@@ -13,12 +13,10 @@ from famtrust import models, utils
 
 
 class IsObjectOwnerOrCreator(permissions.BasePermission):
-    """
-    Verifies that the user making the change is the owner or creator of the
-    object.
-    """
+    """Verify that the user is the owner or creator of the object."""
 
     def has_object_permission(self, request, view, obj):
+        """Verify the user has the required permissions."""
         if request.method in permissions.SAFE_METHODS:
             return True
 
@@ -37,23 +35,19 @@ class IsAuthenticatedWithUserService(permissions.BasePermission):
     """Verify that the user is authenticated."""
 
     def has_permission(self, request, view):
+        """Verify the user is authenticated."""
         return hasattr(request, "ft_user")
 
 
 class IsSubAccountOwnerOrCreator(IsObjectOwnerOrCreator):
-    """
-    Verifies that the user making the change is the owner
-    or creator of the account.
-    """
+    """Verify that the user is the owner or creator of the account."""
 
 
 class IsFamilyAccountCreatorOrAdmin(permissions.BasePermission):
-    """
-    Verifies that the user making the change is the creator
-    or an admin of the family account.
-    """
+    """Verify that the user is the owner or an admin of the family account."""
 
     def has_object_permission(self, request, view, obj):
+        """Verify the user has the required permissions."""
         if request.method in permissions.SAFE_METHODS:
             return True
 
@@ -62,8 +56,7 @@ class IsFamilyAccountCreatorOrAdmin(permissions.BasePermission):
             raise utils.HTTPException(
                 detail={
                     "error": _(
-                        "You are not authorized to perform this "
-                        "action."
+                        "You are not authorized to perform this action."
                     )
                 },
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -71,7 +64,4 @@ class IsFamilyAccountCreatorOrAdmin(permissions.BasePermission):
 
 
 class IsFundRequestOwnerOrCreator(IsObjectOwnerOrCreator):
-    """
-    Verifies that the user making the change is the owner
-    or creator of the fund request.
-    """
+    """Verify that the user is the owner or creator of the fund request."""
