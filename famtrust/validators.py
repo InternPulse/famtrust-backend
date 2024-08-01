@@ -56,7 +56,8 @@ class BaseValidatorMixin:
         try:
             user = self.get_user()
             default_family_group = fam_models.FamilyGroup.objects.get(
-                is_default=True, id=user.defaultGroup
+                is_default=True, id=data.get("family_group").id,
+                owner_id=user.id
             )
         except fam_models.FamilyGroup.DoesNotExist:
             raise utils.HTTPException(
