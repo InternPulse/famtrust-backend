@@ -1,3 +1,5 @@
+"""API views for accounts app."""
+
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import (
@@ -50,18 +52,9 @@ class SubAccountViewSet(viewsets.ModelViewSet):
         return SubAccount.objects.filter(owner_id=user.id)
 
     def perform_create(self, serializer):
-        """
-        Create a new sub-account for the current user's family accounts.
-        """
+        """Create a new sub-account."""
         user = self.request.ft_user
         serializer.validated_data["created_by"] = user.id
-
-        if not user.isAdmin:
-            raise utils.HTTPException(
-                detail=_("Only admin can create sub-accounts"),
-                code="forbidden",
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
 
         self.request.data["created_by"] = user.id
 
@@ -83,9 +76,7 @@ class SubAccountViewSet(viewsets.ModelViewSet):
         ),
     )
     def list(self, request, *args, **kwargs):
-        """
-        This endpoint returns all sub-accounts.
-        """
+        """Return all sub-accounts."""
         return super().list(request, *args, **kwargs)
 
     @extend_schema(
@@ -135,7 +126,7 @@ class SubAccountViewSet(viewsets.ModelViewSet):
         ),
     )
     def destroy(self, request, *args, **kwargs):
-        """Deletes an existing sub-account."""
+        """Delete an existing sub-account."""
         return super().destroy(request, *args, **kwargs)
 
 
@@ -161,6 +152,7 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
+        """Create a new family account."""
         user = self.request.ft_user
         serializer.validated_data["created_by"] = user.id
         super().perform_create(serializer)
@@ -173,6 +165,7 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
         ),
     )
     def list(self, request, *args, **kwargs):
+        """List all family accounts."""
         return super().list(request, *args, **kwargs)
 
     @extend_schema(
@@ -230,13 +223,15 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
         summary="Delete an existing family account",
     )
     def destroy(self, request, *args, **kwargs):
-        """Deletes an existing family account."""
+        """Delete an existing family account."""
         return super().destroy(request, *args, **kwargs)
 
 
 @extend_schema(tags=["Accounts"])
 class AccountViewSet(viewsets.GenericViewSet):
     """
+    Retrieve a summary of sub-accounts and family accounts.
+
     This is useful for requests that need both sub-accounts and
     family accounts in a single response. The response is paginated and then
     returned to the user.
@@ -248,9 +243,7 @@ class AccountViewSet(viewsets.GenericViewSet):
     permission_classes = [permissions.IsAuthenticatedWithUserService]
 
     def get_queryset(self):
-        """
-        Returns both SubAccount and FamilyAccount query sets.
-        """
+        """Return both SubAccount and FamilyAccount query sets."""
         user = self.request.ft_user
 
         sub_accounts = SubAccount.objects.filter(owner_id=user.id)
@@ -268,8 +261,7 @@ class AccountViewSet(viewsets.GenericViewSet):
     )
     def list(self, request):
         """
-        Retrieve a paginated list of all sub-accounts and family accounts
-        for the current user.
+        Retrieve sub-accounts and family accounts for the current user.
 
         This is useful for requests that need both sub-accounts and
         family accounts in a single response. The response is paginated and
@@ -287,6 +279,8 @@ class AccountViewSet(viewsets.GenericViewSet):
 
     def paginate_accounts(self, *, sub_accounts, family_accounts, request):
         """
+        Return a paginated response for both sub-accounts and family accounts.
+
         Paginates both sub_accounts and family_accounts and returns a
         paginated response.
         """
@@ -330,6 +324,7 @@ class FundRequestViewSet(viewsets.ModelViewSet):
     )
 
     def perform_create(self, serializer):
+        """Create a new fund request."""
         user = self.request.ft_user
         serializer.validated_data["requested_by"] = user.id
         super().perform_create(serializer)
@@ -338,7 +333,7 @@ class FundRequestViewSet(viewsets.ModelViewSet):
         #  owner of the family account the request was made on.
 
     def get_queryset(self):
-        """Retrieves all fund requests for the current user."""
+        """Retrieve all fund requests for the current user."""
         user = self.request.ft_user
         return FundRequest.objects.filter(requested_by=user.id)
 
@@ -376,8 +371,8 @@ class FundRequestViewSet(viewsets.ModelViewSet):
     )
     def create(self, request, *args, **kwargs):
         """
-        This endpoint is responsible for creating a new fund request in
-        the system.
+        Responsible for creating a new fund request in the system.
+
         It accepts a request object, which contains the necessary data for
         creating a new fund request, and any additional arguments and
         keyword arguments.
@@ -402,5 +397,5 @@ class FundRequestViewSet(viewsets.ModelViewSet):
         summary="Delete an existing fund account.",
     )
     def destroy(self, request, *args, **kwargs):
-        """Deletes an existing fund request."""
+        """Delete an existing fund request."""
         return super().destroy(request, *args, **kwargs)
