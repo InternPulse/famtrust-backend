@@ -1,6 +1,4 @@
-"""
-This module defines useful utility functions.
-"""
+"""This module defines useful utility functions."""
 
 import contextlib
 import os
@@ -20,13 +18,11 @@ from rest_framework.routers import (
 from rest_framework.views import exception_handler
 
 from family_memberships.models import FamilyMembership
+from famtrust.models import User
 
 
 class FamTrustAPI(APIRootView):
-    """
-    A view which returns a list of all existing endpoints, not just the ones
-    on this router.
-    """
+    """Returns a list of all existing endpoints."""
 
     def get(self, request, *args, **kwargs):
         """Returns all existing endpoints."""
@@ -143,7 +139,7 @@ class Pagination(PageNumberPagination):
         max_page_size = 100
 
     def get_page_size(self, request):
-        """Returns the page size."""
+        """Return the page size."""
         size = request.query_params.get(self.page_size_query_param, None)
         if not size:
             return self.page_size
@@ -160,7 +156,7 @@ class Pagination(PageNumberPagination):
         if size <= 0 or size > self.max_page_size:
             raise HTTPException(
                 detail="Page size must be a positive integer and not exceed "
-                       f"{self.max_page_size}",
+                f"{self.max_page_size}",
                 code="invalid_page_size",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
@@ -192,7 +188,7 @@ class Pagination(PageNumberPagination):
         )
 
     def get_paginated_response_schema(self, schema):
-        """Schema for paginated response."""
+        """Return schema for paginated response."""
         return {
             "type": "object",
             "properties": {
@@ -234,7 +230,7 @@ class Pagination(PageNumberPagination):
 
 
 def is_valid_token(*, token) -> tuple[bool, Any] | tuple[bool, None]:
-    """Verifies a user token and returns some user data if valid."""
+    """Verify a user token and returns some user data if valid."""
     url = f"{settings.EXTERNAL_AUTH_URL}/{settings.API_VERSION}/validate"
     headers = {"Authorization": token}
 
@@ -246,24 +242,23 @@ def is_valid_token(*, token) -> tuple[bool, Any] | tuple[bool, None]:
         return False, None
 
 
-def fetch_user_data(
-    *, token: str, user_id: str | None = None
-) -> dict[str, Any] | None:
-    """Fetches user data for further usages."""
+def fetch_user_data(*, token: str, user_id: str) -> User | None:
+    """Fetch user data for further usages."""
     url = (
         f"{settings.EXTERNAL_AUTH_URL}/{settings.API_VERSION}/users/"
         f"{user_id}/"
     )
     response = requests.get(url=url, headers={"Authorization": token})
-    response.raise_for_status()
-    return response.json()
+    if response.status_code != status.HTTP_200_OK:
+        return None
+
+    user_data = response.json().get("user")
+    admin = user_data.get("role").get("id") == "admin"
+    return User(**user_data, isAdmin=admin)
 
 
 def get_family_group_ids(*, user_id: str):
-    """
-    Retrieves the family group IDs for the given user if the user
-    belongs to any family group.
-    """
+    """Return a list of the family group IDs for a given user."""
     return FamilyMembership.objects.filter(user_id=user_id).values_list(
         "family_group__id", flat=True
     )
