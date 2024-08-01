@@ -43,7 +43,7 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
         user = self.request.ft_user
         return models.FamilyGroup.objects.filter(
             Q(members__user_id=user.id) | Q(owner_id=user.id)
-        )
+        ).distinct()
 
     def perform_create(self, serializer):
         """Create a new family group."""
@@ -188,7 +188,7 @@ class FamilyMembershipViewSet(viewsets.ModelViewSet):
             return models.FamilyMembership.objects.filter(
                 Q(user_id__in=default_family_group_members)
                 | Q(user_id=user.id)
-            )
+            ).distinct()
         return models.FamilyMembership.objects.filter(user_id=user.id)
 
     @extend_schema(
