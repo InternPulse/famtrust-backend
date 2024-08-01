@@ -100,19 +100,19 @@ else:
 AUTH_PASSWORD_VALIDATORS = [
     {
         "NAME": "django.contrib.auth.password_validation."
-        "UserAttributeSimilarityValidator",
+                "UserAttributeSimilarityValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation."
-        "MinimumLengthValidator",
+                "MinimumLengthValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation"
-        ".CommonPasswordValidator",
+                ".CommonPasswordValidator",
     },
     {
         "NAME": "django.contrib.auth.password_validation"
-        ".NumericPasswordValidator",
+                ".NumericPasswordValidator",
     },
 ]
 
@@ -193,6 +193,13 @@ SPECTACULAR_SETTINGS = {
         "deepLinking": True,
         "persistAuthorization": True,
         "displayOperationId": True,
+        "SECURITY_DEFINITIONS": {
+            "api_key": {
+                "type": "apiKey",
+                "name": "Bearer",
+                "in": "header"
+            }
+        }
     },
 }
 

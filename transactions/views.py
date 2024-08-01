@@ -6,9 +6,7 @@ from drf_spectacular.utils import (
     OpenApiResponse,
     extend_schema,
 )
-from rest_framework import (
-    viewsets,
-)
+from rest_framework import viewsets
 
 from famtrust import permissions
 from transactions import (
@@ -28,11 +26,11 @@ class TransactionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Retrieves all transactions for the current user."""
         user = self.request.ft_user
-        return models.Transaction.objects.filter(user_id=user.get("id"))
+        return models.Transaction.objects.filter(user_id=user.id)
 
     def perform_create(self, serializer):
         user = self.request.ft_user
-        serializer.validated_data["user_id"] = user.get("id")
+        serializer.validated_data["user_id"] = user.id
         super().perform_create(serializer)
 
     @extend_schema(

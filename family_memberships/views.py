@@ -1,3 +1,6 @@
+"""Views for the family_memberships app."""
+
+from django.db.models import Q
 from drf_spectacular.utils import (
     OpenApiRequest,
     OpenApiResponse,
@@ -29,18 +32,26 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
     serializer_class = FamilyGroupSerializer
     permission_classes = (permissions.IsAuthenticatedWithUserService,)
     filterset_fields = ("name", "owner_id", "is_default")
+    search_fields = ("name",)
 
     def get_queryset(self):
+        """Return a queryset of FamilyGroup objects.
+
+        Members of a family can see only the groups they belong to, while
+        Admins can see both the groups they own and the groups they belong to.
+        """
         user = self.request.ft_user
         return models.FamilyGroup.objects.filter(
-            members__user_id=user.get("id")
+            Q(members__user_id=user.id) | Q(owner_id=user.id)
         )
 
     def perform_create(self, serializer):
-        serializer.validated_data["owner_id"] = self.request.ft_user.get("id")
-        super().perform_create(serializer)
+        """Create a new family group."""
+        serializer.validated_data["owner_id"] = self.request.ft_user.id
+        return super().perform_create(serializer)
 
     def perform_destroy(self, instance):
+        """Delete a family group."""
         if instance.is_default:
             raise utils.HTTPException(
                 detail={
@@ -50,6 +61,9 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
                 },
                 status_code=status.HTTP_409_CONFLICT,
             )
+        if "force" in self.request.data:
+            if self.request.data["force"]:
+                return super().perform_destroy(instance)
         if models.FamilyMembership.objects.filter(
             family_group_id=instance.id
         ).exists():
@@ -57,12 +71,12 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
                 detail={
                     "error": "The family group has members and cannot be "
                     "deleted.",
-                    "next_steps": "Remove all members before deleting the "
-                    "group.",
+                    "next_steps": "Move all members to another group "
+                    "before deleting the group.",
                 },
                 status_code=status.HTTP_409_CONFLICT,
             )
-        super().perform_destroy(instance)
+        return super().perform_destroy(instance)
 
     @extend_schema(
         summary="Retrieve all family groups",
@@ -122,7 +136,7 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
         ),
     )
     def destroy(self, request, *args, **kwargs):
-        """Deletes an existing family group."""
+        """Delete an existing family group."""
         return super().destroy(request, *args, **kwargs)
 
     @action(
@@ -133,7 +147,15 @@ class FamilyGroupViewSet(viewsets.ModelViewSet):
     )
     def members(self, request, pk=None):
         """Retrieve all memberships in the family group."""
-        family_group = models.FamilyGroup.objects.get(id=pk)
+        try:
+            family_group = models.FamilyGroup.objects.get(
+                id=pk, members__user_id=request.ft_user.id
+            )
+        except models.FamilyGroup.DoesNotExist:
+            raise utils.HTTPException(
+                detail="Family group not found",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
         family_members = FamilyMembershipInFamilyGroupSerializer(
             family_group.members.all(), many=True
         )
@@ -147,10 +169,27 @@ class FamilyMembershipViewSet(viewsets.ModelViewSet):
     http_method_names = ("get", "post", "put", "delete")
     serializer_class = FamilyMembershipSerializer
     permission_classes = (permissions.IsAuthenticatedWithUserService,)
+    search_fields = ("family_group__name",)
 
     def get_queryset(self):
+        """Return a queryset of FamilyMembership objects.
+
+        Admins can see all family memberships, while members can only see
+        their own family memberships.
+        """
         user = self.request.ft_user
-        return models.FamilyMembership.objects.filter(user_id=user.get("id"))
+        if user.isAdmin:
+            # get all groups that the users in the default group belong to
+            default_family_group_members = (
+                models.FamilyMembership.objects.filter(
+                    family_group_id=user.defaultGroup
+                ).values_list("user_id", flat=True)
+            )
+            return models.FamilyMembership.objects.filter(
+                Q(user_id__in=default_family_group_members)
+                | Q(user_id=user.id)
+            )
+        return models.FamilyMembership.objects.filter(user_id=user.id)
 
     @extend_schema(
         summary="Retrieve all family memberships",
@@ -210,5 +249,5 @@ class FamilyMembershipViewSet(viewsets.ModelViewSet):
         ),
     )
     def destroy(self, request, *args, **kwargs):
-        """Deletes an existing family membership."""
+        """Delete an existing family membership."""
         return super().destroy(request, *args, **kwargs)

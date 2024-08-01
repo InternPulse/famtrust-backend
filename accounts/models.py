@@ -102,7 +102,10 @@ class FamilyAccount(models.Model):
     """
 
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    name = models.CharField(max_length=100, null=False, blank=False)
+    name = models.CharField(
+        max_length=100, null=False, blank=False,
+        db_index=True
+    )
     family_group = models.ForeignKey(
         to=fm_models.FamilyGroup,
         null=False,

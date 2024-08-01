@@ -7,30 +7,30 @@ import transactions.models as md
 
 
 class ValidateTransactionData:
+
     def __init__(self, transaction: md.Transaction) -> None:
         # verify that fund request id is set for fund request transactions
         if (
             transaction.transaction_type
             == md.TransactionTypeEnum.FUND_REQUEST
         ):
-            self.validate_fund_request_id(transaction)
+            self._validate_fund_request_id(transaction)
 
         # validate transaction direction data
         match transaction.transaction_direction:
             case md.TransactionDirectionEnum.SUB_ACCOUNT_TO_SUB_ACCOUNT:
-                self.validate_sub_account_to_sub_account(transaction)
+                self._validate_sub_account_to_sub_account(transaction)
             case md.TransactionDirectionEnum.SUB_ACCOUNT_TO_FAMILY_ACCOUNT:
-                self.validate_sub_account_to_family_account(transaction)
+                self._validate_sub_account_to_family_account(transaction)
             case md.TransactionDirectionEnum.FAMILY_ACCOUNT_TO_SUB_ACCOUNT:
-                self.validate_family_account_to_sub_account(transaction)
+                self._validate_family_account_to_sub_account(transaction)
             case md.TransactionDirectionEnum.FAMILY_ACCOUNT_TO_FAMILY_ACCOUNT:
-                self.validate_family_account_to_family_account(transaction)
-
-            # TODO: Add more validation for other transaction direction cases
-            #  that are not implemented yet.
+                self._validate_family_account_to_family_account(transaction)
+            case md.TransactionDirectionEnum.BANK_TO_FAMILY_ACCOUNT:
+                self._validate_bank_to_family_account(transaction)
 
     @staticmethod
-    def validate_fund_request_id(transaction: md.Transaction) -> None:
+    def _validate_fund_request_id(transaction: md.Transaction) -> None:
         """
         Validate that the fund request id is set for fund
         request transactions.
@@ -44,7 +44,7 @@ class ValidateTransactionData:
             )
 
     @staticmethod
-    def validate_sub_account_to_sub_account(
+    def _validate_sub_account_to_sub_account(
         transaction: md.Transaction,
     ) -> None:
         """Validate sub_account_to_sub_account transaction."""
@@ -92,7 +92,7 @@ class ValidateTransactionData:
         transaction.sub_destination_account.save()
 
     @staticmethod
-    def validate_sub_account_to_family_account(
+    def _validate_sub_account_to_family_account(
         transaction: md.Transaction,
     ) -> None:
         """Validate sub_account_to_family_account transaction."""
@@ -114,7 +114,7 @@ class ValidateTransactionData:
         transaction.family_destination_account.save()
 
     @staticmethod
-    def validate_family_account_to_sub_account(
+    def _validate_family_account_to_sub_account(
         transaction: md.Transaction,
     ) -> None:
         """Validate family_account_to_sub_account transaction."""
@@ -150,7 +150,7 @@ class ValidateTransactionData:
         transaction.sub_destination_account.save()
 
     @staticmethod
-    def validate_family_account_to_family_account(
+    def _validate_family_account_to_family_account(
         transaction: md.Transaction,
     ) -> None:
         """Validate family_account_to_family_account transaction."""
@@ -194,4 +194,17 @@ class ValidateTransactionData:
         transaction.family_destination_account.balance += transaction.amount
 
         transaction.family_source_account.save()
+        transaction.family_destination_account.save()
+
+    @staticmethod
+    def _validate_bank_to_family_account(
+        transaction: md.Transaction
+    ) -> None:
+        """Validate bank_to_family_account transaction."""
+        if not transaction.family_destination_account_id:
+            raise ValidationError(
+                _("Destination family account must be set.")
+            )
+
+        transaction.family_destination_account.balance += transaction.amount
         transaction.family_destination_account.save()
