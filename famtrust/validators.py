@@ -15,8 +15,18 @@ class BaseValidatorMixin:
     model = None
     friendly_name = None
 
+    user_not_in_group_exception = utils.HTTPException(
+        detail=_("User is not in the default family group"),
+        status_code=status.HTTP_400_BAD_REQUEST,
+    )
+
     def get_user(self):
+        """Get the user making the request."""
         return self.context["request"].ft_user
+
+    def get_token(self):
+        """Get the token from the request headers."""
+        return self.context["request"].headers.get("Authorization")
 
     def __subclasscheck__(self, subclass):
         if any(not var for var in (self.model, self.friendly_name)):
@@ -44,36 +54,36 @@ class BaseValidatorMixin:
     def _validate_user_is_in_default_group(self, data):
         """Validate that the user is in the default family group."""
         user = self.get_user()
-        default_family = fam_models.FamilyGroup.objects.filter(
-            is_default=True
-        )
-        if not default_family.filter(members__user_id=user.id):
-            raise utils.HTTPException(
-                detail=_("User does not belong to the default family group"),
-                status_code=status.HTTP_400_BAD_REQUEST,
+        try:
+            default_family_group = fam_models.FamilyGroup.objects.get(
+                is_default=True, id=user.defaultGroup
             )
+        except fam_models.FamilyGroup.DoesNotExist:
+            raise self.user_not_in_group_exception
 
-        if "owner_id" in data:
-            if not default_family.filter(
-                members__user_id=data["owner_id"]
-            ).exists():
+        if "owner_id" in data and data["owner_id"] != user.id:
+            user = utils.fetch_user_data(
+                token=self.get_token(), user_id=data["owner_id"]
+            )
+            if not user:
                 raise utils.HTTPException(
-                    detail=_(
-                        "Owner is not a member of the default family group"
-                    ),
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                )
-
-        if "user_id" in data:
-            if not default_family.filter(
-                members__user_id=data["user_id"]
-            ).exists():
-                raise utils.HTTPException(
-                    detail=_(
-                        "User is not a member of the default family group"
-                    ),
+                    detail=_("User does not exist."),
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 )
+
+        if "user_id" in data and data["user_id"] != user.id:
+            user = utils.fetch_user_data(
+                token=self.get_token(), user_id=data["user_id"]
+            )
+            if not user:
+                raise utils.HTTPException(
+                    detail=_("User does not exist."),
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                )
+            if not default_family_group.filter(
+                members__user_id=user.id
+            ).exists():
+                raise self.user_not_in_group_exception
 
     def _validate_user_is_admin(self):
         """Validate that the user is an admin."""

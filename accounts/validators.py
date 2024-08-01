@@ -1,3 +1,5 @@
+"""Validators for the account app."""
+
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 
@@ -14,12 +16,14 @@ class SubAccountValidatorMixin(BaseValidatorMixin):
     friendly_name = "sub account"
 
     def validate(self, data):
+        """Validate the sub account data."""
         super().validate(data)
         self._validate_user_has_access_to_family_account(data)
-
+        self._validate_user_does_not_have_sub_account(data)
         return data
 
     def _validate_user_has_access_to_family_account(self, data):
+        """Validate that the user has access to the family account."""
         family_account: models.FamilyAccount = data["family_account"]
         user = self.get_user()
 
@@ -31,7 +35,23 @@ class SubAccountValidatorMixin(BaseValidatorMixin):
                     "User is not a member of the group this family account "
                     "is linked to"
                 ),
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+    def _validate_user_does_not_have_sub_account(self, data):
+        """
+        Validate that the user does not already have a sub account in the
+        family account.
+        """
+        user = self.get_user()
+        family_account: models.FamilyAccount = data["family_account"]
+
+        if family_account.sub_accounts.filter(owner_id=user.id).exists():
+            raise utils.HTTPException(
+                detail=_(
+                    "User already has a sub account in this family account"
+                ),
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
 
@@ -42,11 +62,13 @@ class FamilyAccountValidatorMixin(BaseValidatorMixin):
     friendly_name = "family account"
 
     def validate(self, data):
+        """Validate the family account data."""
         super().validate(data)
         self._validate_member_in_family_group(data)
         return data
 
     def _validate_member_in_family_group(self, data):
+        """Validate that the user is a member of the family group."""
         user = self.context["request"].ft_user
         try:
             family_group = fam_models.FamilyGroup.objects.get(

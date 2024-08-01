@@ -7,21 +7,17 @@ from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 
 from family_memberships import models
-from famtrust import utils
+from famtrust import utils, validators
 
 
-class FamilyGroupValidatorMixin:
+class FamilyGroupValidatorMixin(validators.BaseValidatorMixin):
     """Mixin to validate the data given before creating or
     updating a family group."""
-
-    def get_user(self):
-        """Get the user data from the request."""
-        return self.context["request"].ft_user
 
     def validate(self, data):
         """Validate the data given before creating or updating a
         family group."""
-        self._validate_user_is_admin()
+        super().validate(data)
         self._validate_default_group_exists(data)
         self._validate_unique_together(data)
 
@@ -40,7 +36,7 @@ class FamilyGroupValidatorMixin:
                     "error": _(
                         "A default group already exists for this "
                         "user."
-                        )
+                    )
                 },
                 status_code=status.HTTP_409_CONFLICT,
             )
@@ -91,26 +87,27 @@ class FamilyGroupValidatorMixin:
             )
 
 
-class FamilyMembershipValidatorMixin:
+class FamilyMembershipValidatorMixin(validators.BaseValidatorMixin):
     """Mixin to validate the data given before creating or updating a
     family membership."""
-
-    def get_user_data(self):
-        """Get the user data from the request."""
-        return self.context["request"].ft_user
 
     def validate(self, data):
         """Validate the data given before creating or updating a
         family membership."""
-        self._validate_user_is_admin()
+        super().validate(data)
         self._validate_user_is_not_already_in_group(data)
 
         return data
 
     def _validate_user_is_admin(self):
-        """Validate that the user is an admin before creating a
-        family membership."""
-        user = self.get_user_data()
+        """
+        Validate that the user is an admin before creating a family
+        membership.
+
+        Raises:
+             HTTPException: If the user is not an admin.
+        """
+        user = self.get_user()
         if not user.isAdmin:
             raise utils.HTTPException(
                 detail={
@@ -124,8 +121,12 @@ class FamilyMembershipValidatorMixin:
 
     @staticmethod
     def _validate_user_is_not_already_in_group(data):
-        """Validate that the user is not already a member of the
-        family group."""
+        """
+        Validate that the user is not already a member of the family group.
+
+        Args:
+            data (dict): The data to be validated.
+        """
         user_id = data.get("user_id")
         family_group = data.get("family_group")
         group_memberships = family_group.members.values_list(
@@ -141,7 +142,7 @@ class FamilyMembershipValidatorMixin:
     def validate_user_is_part_of_default_group(self, data):
         """Validate that the user is part of the default group."""
         user_id = data.get("user_id")
-        user = self.get_user_data()
+        user = self.get_user()
         default_group = models.FamilyGroup.objects.filter(
             owner_id=user.id, is_default=True
         ).first()
