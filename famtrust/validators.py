@@ -55,10 +55,15 @@ class BaseValidatorMixin:
         """Validate that the user is in the default family group."""
         try:
             user = self.get_user()
-            default_family_group = fam_models.FamilyGroup.objects.get(
-                is_default=True, id=data.get("family_group").id,
-                owner_id=user.id
-            )
+            if "family_group" in data:
+                default_family_group = fam_models.FamilyGroup.objects.get(
+                    is_default=True, id=data.get("family_group").id,
+                    owner_id=user.id
+                )
+            else:
+                default_family_group = fam_models.FamilyGroup.objects.get(
+                    is_default=True, id=user.defaultGroup, owner_id=user.id
+                )
         except fam_models.FamilyGroup.DoesNotExist:
             raise utils.HTTPException(
                 detail={
@@ -76,7 +81,9 @@ class BaseValidatorMixin:
             )
             if not user:
                 raise utils.HTTPException(
-                    detail=_("User does not exist."),
+                    detail=_(
+                        f"User with id {data['user_id']} does not exist."
+                    ),
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -86,7 +93,9 @@ class BaseValidatorMixin:
             )
             if not user:
                 raise utils.HTTPException(
-                    detail=_("User does not exist."),
+                    detail=_(
+                        f"User with id {data['user_id']} does not exist."
+                    ),
                     status_code=status.HTTP_400_BAD_REQUEST,
                 )
             if not default_family_group.filter(
