@@ -70,7 +70,16 @@ class ValidateUserMiddleware(MiddlewareMixin):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        valid_token, data = utils.is_valid_token(token=token)
+        try:
+            valid_token, data = utils.is_valid_token(token=token)
+        except TypeError:
+            return JsonResponse(
+                data={
+                    "error": _("Invalid or expired token"),
+                    "status_code": status.HTTP_401_UNAUTHORIZED,
+                },
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
         if not valid_token:
             return JsonResponse(
                 data={
