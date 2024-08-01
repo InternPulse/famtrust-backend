@@ -155,7 +155,7 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
         """Create a new family account."""
         user = self.request.ft_user
         serializer.validated_data["created_by"] = user.id
-        super().perform_create(serializer)
+        return super().perform_create(serializer)
 
     @extend_schema(
         summary="Retrieve all family accounts",
