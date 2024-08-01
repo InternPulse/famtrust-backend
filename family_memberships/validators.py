@@ -17,7 +17,7 @@ class FamilyGroupValidatorMixin(validators.BaseValidatorMixin):
     def validate(self, data):
         """Validate the data given before creating or updating a
         family group."""
-        super().validate(data)
+        self._validate_user_is_admin()
         self._validate_default_group_exists(data)
         self._validate_unique_together(data)
 
