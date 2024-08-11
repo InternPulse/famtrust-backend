@@ -142,6 +142,7 @@ class FamilyAccountViewSet(viewsets.ModelViewSet):
     )
     filterset_fields = ("name", "created_by")
     search_fields = ("name", "created_by")
+    http_method_names = ("get", "post", "put", "delete")
 
     def get_queryset(self):
         """Return family accounts for the current user's family groups."""
