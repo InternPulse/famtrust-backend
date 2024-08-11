@@ -24,6 +24,9 @@ class BaseValidatorMixin:
         """Get the user making the request."""
         return self.context["request"].ft_user
 
+    def get_http_method(self):
+        return self.context["request"].method
+
     def get_token(self):
         """Get the token from the request headers."""
         return self.context["request"].headers.get("Authorization")

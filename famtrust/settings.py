@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -76,7 +77,14 @@ WSGI_APPLICATION = "famtrust.wsgi.application"
 
 DB_NAME = os.environ.get("DB_NAME")
 
-if os.environ.get("DB_ENGINE") == "sqlite3":
+if "test" in sys.argv:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": ":memory:"
+        }
+    }
+elif os.environ.get("DB_ENGINE") == "sqlite3":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
