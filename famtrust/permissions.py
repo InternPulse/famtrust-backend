@@ -20,15 +20,26 @@ class IsObjectOwnerOrCreator(permissions.BasePermission):
         if request.method in permissions.SAFE_METHODS:
             return True
 
-        user = request.ft_user
-        if hasattr(obj, "requested_by"):
-            return user.id == obj.requested_by  # used for fund requests
+        forbidden_exception = utils.HTTPException(
+            detail={
+                "error": _(
+                    "You are not authorized to perform this action."
+                )
+            },
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+        user: models.User = request.ft_user
 
-        if hasattr(obj, "created_by"):
-            return user.id == obj.created_by
+        if hasattr(obj, "requested_by") and user.id != obj.requested_by:
+            raise forbidden_exception
 
-        if hasattr(obj, "owner_id"):
-            return user.id == obj.owner_id
+        if hasattr(obj, "created_by") and user.id != obj.created_by:
+            raise forbidden_exception
+
+        if hasattr(obj, "owner_id") and user.id != obj.owner_id:
+            raise forbidden_exception
+
+        return True
 
 
 class IsAuthenticatedWithUserService(permissions.BasePermission):
@@ -43,24 +54,8 @@ class IsSubAccountOwnerOrCreator(IsObjectOwnerOrCreator):
     """Verify that the user is the owner or creator of the account."""
 
 
-class IsFamilyAccountCreatorOrAdmin(permissions.BasePermission):
+class IsFamilyAccountCreatorOrAdmin(IsObjectOwnerOrCreator):
     """Verify that the user is the owner or an admin of the family account."""
-
-    def has_object_permission(self, request, view, obj):
-        """Verify the user has the required permissions."""
-        if request.method in permissions.SAFE_METHODS:
-            return True
-
-        user: models.User = request.ft_user
-        if user.id != obj.created_by:
-            raise utils.HTTPException(
-                detail={
-                    "error": _(
-                        "You are not authorized to perform this action."
-                    )
-                },
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
 
 
 class IsFundRequestOwnerOrCreator(IsObjectOwnerOrCreator):

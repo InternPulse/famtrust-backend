@@ -10,10 +10,9 @@ of the project. The core functionalities include:
 - Family Transactions Management
 - Fund Requests Management
 
-
 Live link is at https://core.famtrust.biz/api/v1
 
-Doc link at https://documenter.getpostman.com/view/14404907/2sA3kXCzfa
+Doc link at https://documenter.getpostman.com/view/14404907/2sA3s3HWhp
 
 ## Installation Instructions
 
@@ -24,7 +23,8 @@ Before setting up the project locally, ensure you have the following prerequisit
 - [Python](https://www.python.org/downloads/) (>=3.11.4)
 - [Django](https://www.djangoproject.com/download/)
 - [Django Rest Framework](https://www.django-rest-framework.org/#installation)
-- A Database System (e.g., Postgres, MySQL, SQLite) - [Django Database Installation](https://www.djangoproject.com/download/#database-installation)
+- A Database System (e.g., Postgres, MySQL,
+  SQLite) - [Django Database Installation](https://www.djangoproject.com/download/#database-installation)
 
 Ensure you follow the `env_file_template` to set the required variables
 
@@ -78,8 +78,8 @@ MAX_PAGE_SIZE=
     python3 manage.py runserver
     ```
 
-The API should now be running locally at [http://localhost:8000/api/v1](http://localhost:8000/api/v1).
-
+The API should now be running locally
+at [http://localhost:8000/api/v1](http://localhost:8000/api/v1).
 
 # Commit Standards
 
@@ -90,14 +90,17 @@ The API should now be running locally at [http://localhost:8000/api/v1](http://l
 
 ## Contributions
 
-famtrust-backend is open to contributions, but I recommend creating an issue or replying in a comment to let us know what you are working on first that way we don't overwrite each other.
+famtrust-backend is open to contributions, but I recommend creating an issue or replying in a
+comment to let us know what you are working on first that way we don't overwrite each other.
 
 ## Contribution Guidelines
 
 1. Clone the repo `git clone https://github.com/InternPulse/famtrust-backend.git`.
-2. Open your terminal & set the origin branch: `git remote add origin https://github.com/InternPulse/famtrust-backend.git`
+2. Open your terminal & set the origin
+   branch: `git remote add origin https://github.com/InternPulse/famtrust-backend.git`
 3. Pull origin `git pull origin dev`
-4. Create a new branch for the task you were assigned to, eg `TicketNumber/(Feat/Bug/Fix/Chore)/Ticket-title` : `git checkout -b BA-001/Feat/Sign-Up-from`
+4. Create a new branch for the task you were assigned to,
+   eg `TicketNumber/(Feat/Bug/Fix/Chore)/Ticket-title` : `git checkout -b BA-001/Feat/Sign-Up-from`
 5. After making changes, do `git add .`
 6. Commit your changes with a descriptive commit message : `git commit -m "your commit message"`.
 7. To make sure there are no conflicts, run `git pull origin dev`.
@@ -106,9 +109,10 @@ famtrust-backend is open to contributions, but I recommend creating an issue or 
 10. Ensure to describe your pull request.
 11. If you've added code that should be tested, add some test examples.
 
-
 # Merging
-Under any circumstances should you merge a pull request on a specific branch to the `dev` or `main` branch
+
+Under any circumstances should you merge a pull request on a specific branch to the `dev` or `main`
+branch
 
 ### _Commit CheatSheet_
 
@@ -128,5 +132,7 @@ Under any circumstances should you merge a pull request on a specific branch to 
 
 > _Sample Commit Messages_
 
-- `chore: Updated README file`:= `chore` is used because the commit didn't make any changes to the backend or test folders in any way.
-- `feat: Added plugin info endpoints`:= `feat` is used here because the feature was non-existent before the commit.
+- `chore: Updated README file`:= `chore` is used because the commit didn't make any changes to the
+  backend or test folders in any way.
+- `feat: Added plugin info endpoints`:= `feat` is used here because the feature was non-existent
+  before the commit.
