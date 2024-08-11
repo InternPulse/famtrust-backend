@@ -35,6 +35,7 @@ class SubAccountViewSet(viewsets.ModelViewSet):
         permissions.IsAuthenticatedWithUserService,
         permissions.IsSubAccountOwnerOrCreator,
     )
+    http_method_names = ("get", "post", "put", "delete")
 
     def get_queryset(self):
         """

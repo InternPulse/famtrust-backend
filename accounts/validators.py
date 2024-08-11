@@ -24,7 +24,7 @@ class SubAccountValidatorMixin(BaseValidatorMixin):
 
     def _validate_user_has_access_to_family_account(self, data):
         """Validate that the user has access to the family account."""
-        family_account: models.FamilyAccount = data["family_account"]
+        family_account: models.FamilyAccount = data.get("family_account")
         user = self.get_user()
 
         if not family_account.family_group.members.filter(
@@ -40,13 +40,19 @@ class SubAccountValidatorMixin(BaseValidatorMixin):
 
     def _validate_user_does_not_have_sub_account(self, data):
         """
-        Validate that the user does not already have a sub account in the
-        family account.
-        """
-        user = self.get_user()
-        family_account: models.FamilyAccount = data["family_account"]
+        Validate that the user does not already have a subaccount in the
+        family account before creating it.
 
-        if family_account.sub_accounts.filter(owner_id=user.id).exists():
+        This validation is not run when updating an instance of a subaccount.
+        """
+        http_method = self.get_http_method()
+        user = self.get_user()
+        family_account: models.FamilyAccount = data.get("family_account")
+
+        if (
+            family_account.sub_accounts.filter(owner_id=user.id).exists() and
+            http_method.upper() == 'POST'
+        ):
             raise utils.HTTPException(
                 detail=_(
                     "User already has a sub account in this family account"
@@ -72,7 +78,7 @@ class FamilyAccountValidatorMixin(BaseValidatorMixin):
         user = self.context["request"].ft_user
         try:
             family_group = fam_models.FamilyGroup.objects.get(
-                id=data["family_group"].id,
+                id=data.get("family_group").id,
             )
         except fam_models.FamilyGroup.DoesNotExist:
             raise utils.HTTPException(
